@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.1">
+<meta name="google-site-verification" content="nRdQ64asSdtMIPKmtAL6qJO9Ka3rBCML55licirmHbo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/panda-apple.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/panda-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/panda-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"timeoverflow.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="本文是一年多以前还在用VPS科学上网的时候的整理的，VPS主机用的则是利用教育邮箱从GitHub白嫖的DigitalOcean50美元优惠券，最低配置5美元1个月，可以用10个月。配置过程其实是比较麻烦的，曾经想写个一件脚本，奈何当时一直没有学shell编程。利用VPS搭的梯子速度不快，看YouTube还经常比较卡，好处是可以学习一些Linux系统的知识，让我在研究生的预备阶段接触实验室的服务器时">
+<meta property="og:type" content="article">
+<meta property="og:title" content="WPS科学上网指南">
+<meta property="og:url" content="https://timeoverflow.github.io/2021/02/12/VPS-GFW-guide/index.html">
+<meta property="og:site_name" content="时间溢出的地方">
+<meta property="og:description" content="本文是一年多以前还在用VPS科学上网的时候的整理的，VPS主机用的则是利用教育邮箱从GitHub白嫖的DigitalOcean50美元优惠券，最低配置5美元1个月，可以用10个月。配置过程其实是比较麻烦的，曾经想写个一件脚本，奈何当时一直没有学shell编程。利用VPS搭的梯子速度不快，看YouTube还经常比较卡，好处是可以学习一些Linux系统的知识，让我在研究生的预备阶段接触实验室的服务器时">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301105145.PNG">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301105233.PNG">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301105334.PNG">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301105511.PNG">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301105558.PNG">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301105715.jpg">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301105738.PNG">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301105835.PNG">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301105916.jpg">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301105942.jpg">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110027.PNG">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110055.PNG">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110122.PNG">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110153.PNG">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110219.PNG">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110240.PNG">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110305.PNG">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110336.PNG">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110358.PNG">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110430.PNG">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110453.PNG">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110514.PNG">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110541.PNG">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110609.PNG">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110639.PNG">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110713.PNG">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110735.PNG">
+<meta property="article:published_time" content="2021-02-12T15:31:37.000Z">
+<meta property="article:modified_time" content="2022-03-01T03:11:25.743Z">
+<meta property="article:author" content="TimeOverflow">
+<meta property="article:tag" content="科学上网">
+<meta property="article:tag" content="VPS">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301105145.PNG">
+
+<link rel="canonical" href="https://timeoverflow.github.io/2021/02/12/VPS-GFW-guide/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>WPS科学上网指南 | 时间溢出的地方</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">时间溢出的地方</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/TimeOverflow" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://timeoverflow.github.io/2021/02/12/VPS-GFW-guide/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/uploads/avatar.jpg">
+      <meta itemprop="name" content="TimeOverflow">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="时间溢出的地方">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          WPS科学上网指南
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-02-12 23:31:37" itemprop="dateCreated datePublished" datetime="2021-02-12T23:31:37+08:00">2021-02-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-03-01 11:11:25" itemprop="dateModified" datetime="2022-03-01T11:11:25+08:00">2022-03-01</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E4%BA%BA%E7%94%9F%E7%BB%8F%E9%AA%8C-128056/" itemprop="url" rel="index"><span itemprop="name">人生经验&#128056;</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2021/02/12/VPS-GFW-guide/" class="post-meta-item leancloud_visitors" data-flag-title="WPS科学上网指南" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2021/02/12/VPS-GFW-guide/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2021/02/12/VPS-GFW-guide/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>6 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>本文是一年多以前还在用VPS科学上网的时候的整理的，VPS主机用的则是利用教育邮箱从<a target="_blank" rel="noopener" href="https://github.com">GitHub</a>白嫖的<a target="_blank" rel="noopener" href="https://cloud.digitalocean.com/">DigitalOcean</a>50美元优惠券，最低配置5美元1个月，可以用10个月。配置过程其实是比较麻烦的，曾经想写个一件脚本，奈何当时一直没有学shell编程。利用VPS搭的梯子速度不快，看YouTube还经常比较卡，好处是可以学习一些Linux系统的知识，让我在研究生的预备阶段接触实验室的服务器时没那么捉襟见肘。到了后期，VPS的端口和IP经常被墙，一般端口一天之内就墙了，端口墙过几次之后整个IP就被墙了，端口被墙还好，只要22端口没被墙就可以轻松改端口，然而IP被墙就只能重新换个IP了。而<a target="_blank" rel="noopener" href="https://cloud.digitalocean.com/">DigitalOcean</a>的登录页面使用的一些服务需要翻墙才可以，这样造成了先有蛋还是先有鸡的矛盾——登录<a target="_blank" rel="noopener" href="https://cloud.digitalocean.com/">DigitalOcean</a>是为了换IP继续翻墙，但不翻墙又登录不了<a target="_blank" rel="noopener" href="https://cloud.digitalocean.com/">DigitalOcean</a>，我的解决办法是用手机上的VPN软件翻墙到<a target="_blank" rel="noopener" href="https://cloud.digitalocean.com/">DigitalOcean</a>网站上换IP，这样既麻烦，又有造成数据泄露的危险。痛定思痛，我于2020年6月份放弃了自己搭建VPS的做法，转而购买付费科学上网工具，这样节省了不少时间和经历，也至于在需要查Google的时候掉链子。</p>
+<p>这样，本文只是为了整理而整理，因为这篇文章已经写了很久了，如果因为文件在几个电脑中周转而遗失，未免有些可惜，因此整理到个人博客上，也是给初建的博客充实一下内容。再者，虽然已经不用VPS翻墙了，偶尔还是可以用VPS提供的IPv6能力登录一下<code>IPv6-only</code>的网站的，比如<a target="_blank" rel="noopener" href="http://bt.byr.cn/">北邮人PT</a>。</p>
+<span id="more"></span>
+<font size="15," color="red">严正声明</font>
+
+<font size="5," color="red">网络不是法外之地！非法浏览国外网站是违法行为，不可利用技术手段非法突破我国网络边界。本教程仅限于个人笔记范畴，不可利用其中内容浏览非法内容、行危害我国网络安全之事。毋庸置疑，作者坚决拥护社会主义，时刻践行社会主义核心价值观，是一名遵纪守法的好青年。</font>
+
+
+
+<p><strong>关于如何获得GitHub教育优惠及如何注册DigitalOcean账号并充值，不在本文范围之内，本文默认已经可以开通VPS了。</strong></p>
+<h2 id="创建Droplets"><span class="post-title-index">1. </span><a href="#创建Droplets" class="headerlink" title="创建Droplets"></a>创建Droplets</h2><p>在Digital Ocean主页选择<code>Create—&gt;Droplets</code>，如图所示。</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301105145.PNG" style="zoom: 50%;"></p>
+<h2 id="主机设置"><span class="post-title-index">2. </span><a href="#主机设置" class="headerlink" title="主机设置"></a>主机设置</h2><p>在当前页面依次选择设置项。</p>
+<ol>
+<li><p>Choose an image</p>
+<p>一般选择<code>Ubuntu 18.04 x64</code>，根据自己需求也可选择其他Linux发行版。</p>
+</li>
+<li><p>Choose a plan</p>
+<p>如果服务器访问量不大（如主要用于<del>get across the Great Firewall</del>），选择最低配置的$5种类即可。</p>
+</li>
+<li><p>Add backups</p>
+<p>需要额外费用，为主机月租的20%，一般没有需求不选择。</p>
+</li>
+<li><p>Add block storage</p>
+<p>添加可以在不同主机中移动的存储，一般不需要</p>
+</li>
+<li><p>Choose a datacenter region</p>
+<p>选择主机所在地区，列出的地区如下图</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301105233.PNG"></p>
+<p>实际对于一台特定的主机，并不是所有的区域都可以选择，不能选择的地区会显示为灰色。比如图中的纽约1号计方，旧金山1号机房和阿姆斯特丹2号机房都不可选。</p>
+<p>不同地区的主机在中国大陆的访问速度也不同。可以利用Digital Ocean官方的测速工测试。网址为<a target="_blank" rel="noopener" href="http://speedtest-sfo1.digitalocean.com/">Digitl Ocean speed test</a></p>
+<p>需要指出的是，由于中国三大运营商走的国际线路不同，因此同一个机房在不同运营商的网络代理下速度也不一样。</p>
+<p>目前来看，表现比较好的机房有阿姆斯特丹、伦敦、班加罗尔。旧金山1号和新加坡机房之前速度挺快，但最近似乎比较慢，并且有被墙的风险。考虑到中美贸易战的影响，最好不要选择美国的机房，建议选择欧洲和印度的机房。<del>现在（2019年6月8日）<strong>推荐的是班加罗尔的机房</strong>，测速很快，实际使用也比之前的新加坡机房要快。猜想的原因可能是印度距离中国比较近（但中印隔着喜马拉雅山，可能线路最终还是从欧洲或东南亚绕过来的）。</del></p>
+</li>
+<li><p>Select additional options</p>
+<p>可选项，推荐勾选<code>IPv6</code>，这样可以上北邮人一类的纯IPv6 pt站。</p>
+</li>
+<li><p>Add your SSH keys</p>
+<p>这一步是比较关键的一步。如果选择SSH登录主机的话，这一步必不可少，当然可以选择不用SSH登录，但我没试过。</p>
+<p>首先需要下载<code>PuTTY</code>，并安装，这一步不赘述。安装完成后在Windows开始菜单中看到的PuTTY系列如下图所示：</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301105334.PNG" style="zoom:50%;"></p>
+<p>首先打开<code>PuTTYgen</code>，会看到如下所示的界面。</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301105511.PNG" style="zoom:50%;"></p>
+<p><code>Type of key to generate</code>选择<code>RSA</code>，<code>Number of bits to generate key</code>设为<code>2048</code>即可。</p>
+<p>点击<code>Generate</code>按钮，出现进度条，此时正在产生密钥对，移动鼠标使得光标在空白区域随机移动，否则进度条会停滞不前，这样的目的是产生随机的独一无二的密钥对。</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301105558.PNG" style="zoom:50%;"></p>
+<p>完成后会出现上图界面。在<code>Key passphrase</code>中输入密码，并<code>Confirm passphrase</code>，这个是私钥的密码，也将是将来登录主机时需要输入的密码。</p>
+<p>依次选择<code>Save public key</code>和<code>Save private key</code>，保存公钥和私钥在一个你能找到的位置，保存的格式为<code>ppk</code>格式，命名可以随意，但为了易于辨识，可以命名为<code>public_key.ppk</code>和<code>private_key.ppk</code>。</p>
+<p><strong>保存完毕后不要关闭此页面。</strong>把图中的那一串神秘代码（就是公钥）复制下来（全选复制即可）。现在回到Digital Ocean主机创建页面，在<code>Add your SSH keys</code>中选择<code>New SSH key</code>，在弹出的对话框中粘贴刚刚复制的公钥，如果这是一个合法的公钥代码，方框右边将会出现一个绿色的&#9989;鼓励你一下。然后给这个公钥（随便）起个名字，当然为了辨识度，还是起个有意义的名字，比如<code>pub_key_20190608</code>。这样添加公钥就完成了。</p>
+
+<p>这里提一下为什么上一段说“保存完毕后不要关闭此页面”。如果关闭了这个页面，也是可以通过文本编辑器打开保存的公钥ppk文件找到公钥代码的，但这时复制过来经常会出现问题，可能是换行符的问题，此时方框的右边会给你一个红色的&#10060;反鼓励你一下。</p>
+</li>
+<li><p>Finalize and create</p>
+<p>最后一步，检查一下设置信息。并且可以给自己的主机命名，这个命名将作为自己的主机名。也可以使用默认的名字。</p>
+</li>
+</ol>
+<p>到这一步就完成了一个big step了哦。可以点击<code>Create</code>按钮了。页面将跳转到Droplets，等进度条结束，就可以看到你的主机IP地址了，这标志着你已经有了一台自己的虚拟个人服务器（VPS）了。如下图所示<del>（我有两个Droplets）</del>：</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301105715.jpg" alt></p>
+<h2 id="登录主机"><span class="post-title-index">3. </span><a href="#登录主机" class="headerlink" title="登录主机"></a>登录主机</h2><p>现在就可以用<code>PuTTY</code>登录你的主机了。首先打开<code>PuTTY</code>（not <code>PuTTYgen</code>）。</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301105738.PNG" style="zoom:50%;"></p>
+<p>主界面就是这样子。在<code>Host Name (or IP address)</code>方框中填入自己的IP地址，<code>Port</code>就用默认的<code>22</code>。<code>Connection type</code>选择<code>SSH</code>。一切按照默认的来就行。</p>
+<p>接着选择<code>Connection-&gt;SSH-&gt;Auth</code>，如下所示：</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301105835.PNG" style="zoom:50%;"></p>
+<p>点击<code>Browse...</code>，选择之前保存的私钥ppk文件即可。之后再点击<code>Session</code>按钮，回到最初的起点。在<code>Saved Sessions</code>方框中输入一个名字，当然也是可以随便起的。点击<code>Save</code>按钮，就可以看到方框中出现了一个你刚刚的命名。以后每一次要登录主机，就双击你的<code>Session</code>名，点击<code>Load</code>，在点击<code>Open</code>即可。</p>
+<p>点击<code>Open</code>后，就会出现一个黑框（并没有眼镜&#128056;）。等待几秒（也许不需要等待），就会出现<code>login as:</code>几个不大不小的字，在后面输入<code>root</code>，并按<code>Enter</code>键，会出现让你输入密码的界面。</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301105916.jpg" style="zoom:50%;"></p>
+<p>这里要输入的密码就是保存密钥时输入的密码。输入密码时屏幕上是什么都不显示的，（闭着眼睛）输入即可。输入完了<code>Enter</code>一下。这时你就登录上了你的主机了，界面如下所示：</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301105942.jpg" style="zoom:50%;"></p>
+<p>现在就可以准备安装科学上网的工具了。</p>
+<h2 id="使用Shadowsocks"><span class="post-title-index">4. </span><a href="#使用Shadowsocks" class="headerlink" title="使用Shadowsocks"></a>使用Shadowsocks</h2><p>Shadowsocks是用于服务器端和客户端代理的软件。</p>
+<p>以下所有输入均为命令行输入，基础是你已经登录了主机，并出现了上面那张图。</p>
+<p>首先输入<code>sudo apt update</code>，会升级什么什么玩意，不管。</p>
+<p>然后来一个<code>sudo pip3 install shadowsocks</code>，这就安装好Shadowsocks了。这一步如果报错，通常都是没有<code>pip3</code>导致的，使用命令<code>sudo apt install python3-pip</code>即可。</p>
+<p>现在开始配置Shadowsocks。输入命令<code>sudo vim /etc/shadowsocks.json</code>，这个命令是用<code>vim</code>创建一个空的json格式文件，而我们需要在里面输入一些内容。首先按<code>i</code>键进入编辑模式，此时页面左下角会出现<code>--INSERT--</code>字样。接着输入如下代码（<del>你可能会想着来一套<code>Ctrl-C</code>, <code>Ctrl-V</code>，但在<code>vim</code>下这个行不通，至于怎么复制粘贴，我也不会，所以暂时还是老老实实敲代码进去。在<code>vim</code>中全键盘操作，鼠标没用</del><code>PuTTY</code>中似乎是可以右键复制粘贴的，vim中是否可以鼠标复制粘贴应该取决与不同的终端是否提供了快捷功能）：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;server&quot;</span><span class="punctuation">:</span> <span class="string">&quot;0.0.0.0&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;server_port&quot;</span><span class="punctuation">:</span> <span class="number">12345</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;local_address&quot;</span><span class="punctuation">:</span> <span class="string">&quot;127.0.0.1&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;local_port&quot;</span><span class="punctuation">:</span> <span class="number">1080</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;password&quot;</span><span class="punctuation">:</span> <span class="string">&quot;your password&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;timeout&quot;</span><span class="punctuation">:</span> <span class="number">300</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;method&quot;</span><span class="punctuation">:</span><span class="string">&quot;aes-256-cfb&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;fast_open&quot;</span><span class="punctuation">:</span> <span class="keyword">false</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+<p>其中可以更改的地方为：</p>
+<ul>
+<li><code>server_port: 12345</code>：后面的端口号随便输入，开心就好，<code>0-65536</code>之间都是OK的，但为了稳妥，还是建议输入<code>8000</code>以后的数字。</li>
+<li><code>password: &quot;your password&quot;</code>：自己的密码，毋庸多言。这个密码是后面在Shadowsocks客户端登录时要用的</li>
+</ul>
+<p>输入完毕后检测一下有没有错。没错的话按一下<code>ESC</code>键，注意到此时左下角变成了<code>/etc/shadowsocks.json</code>等等文字。再输入<code>:wq</code>，按<code>Enter</code>键退出<code>vim</code>编辑模式。</p>
+<p>用如下命令启动Shadowsocks:</p>
+<p><code>ssserver -c /etc/shadowsocks.json -d start</code></p>
+<p>如果正常的话，Shadowsocks就启动了，会看到一些友善的提示，表明了Shadowsocks已经在运行。</p>
+<p>当然天有不测风云，运行这一步命令后可能会出现错误（如果没有那是最好了），报错形式如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">AttributeError: /usr/local/ssl/lib/libcrypto.so<span class="number">.1</span><span class="number">.1</span>: undefined symbol: EVP_CIPHER_CTX_cleanup</span><br><span class="line">shadowsocks start failed</span><br></pre></td></tr></table></figure>
+<p>原因是<code>openssl</code>升级到<code>1.1.0</code>以上版本，导致shadowsocks2.8.2启动报<code>undefined symbol: EVP_CIPHER_CTX_cleanup</code>错误。解决办法如下：</p>
+<ol>
+<li>输入<code>vim /usr/local/lib/python3.6/dist-packages/shadowsocks/crypto/openssl.py</code>，打开文件</li>
+<li>按<code>i</code>键进入编辑模式，找到第52行（或者附近），将<code>libcrypto.EVP_CIPHER_CTX_cleanup.argtypes</code>替换为<code>libcrypto.EVP_CIPHER_CTX_reset.argtypes</code></li>
+<li>同样找到第111行附近，同样将<code>libcrypto.EVP_CIPHER_CTX_cleanup.argtypes</code>替换为<code>libcrypto.EVP_CIPHER_CTX_reset.argtypes</code></li>
+<li>修改完毕，按<code>ESC</code>键，再输入<code>:wq</code>退出。</li>
+</ol>
+<p>这时再次运行：</p>
+<p><code>ssserver -c /etc/shadowsocks.json -d start</code></p>
+<p>就会正常启动了，并出现了一些比较友善的提示，这样服务器端的Shadowsocks就配置完成了。</p>
+<h2 id="使用BBR加速"><span class="post-title-index">5. </span><a href="#使用BBR加速" class="headerlink" title="使用BBR加速"></a>使用BBR加速</h2><p><code>BBR</code>可以加速TCP，尽可能跑满带宽, 并且尽量不要有排队的情况。在网络环境较差的情况下，使用<code>BBR</code>有比较好的效果。总而言之，使用<code>BBR</code>加速后网速会更快。操作步骤如下：</p>
+<ol>
+<li><p>修改系统变量</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">echo &quot;net.core.default_qdisc=fq&quot; &gt;&gt; /etc/sysctl.conf</span><br><span class="line">echo &quot;net.ipv4.tcp_congestion_control=bbr&quot; &gt;&gt; /etc/sysctl.conf</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>保存生效</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sysctl -p</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>查看内核是否已开启<code>BBR</code></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sysctl net.ipv4.tcp_available_congestion_control</span><br></pre></td></tr></table></figure>
+<p>显示以下即为开启</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">net.ipv4.tcp_available_congestion_control = bbr cubic reno</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>查看<code>BBR</code>是否启动</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lsmod | grep bbr</span><br></pre></td></tr></table></figure>
+<p>显示以下即为开启</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tcp_bbr                20480  14</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<p>部分显示会有细微不同，只要没有疯狂报错即可。</p>
+<p>如果以上所有内容都完成了，那么可以关掉<code>PuTTY</code>，也就是说，服务器端的事情都做完了。下面可以进行客户端的设置。</p>
+<h2 id="客户端Shadowsocks配置"><span class="post-title-index">6. </span><a href="#客户端Shadowsocks配置" class="headerlink" title="客户端Shadowsocks配置"></a>客户端Shadowsocks配置</h2><p>实际上现在用的Shadowsocks客户端一般都是<a target="_blank" rel="noopener" href="https://github.com/shadowsocksrr/shadowsocksr-csharp/releases">ShadowsocksR</a>，<a target="_blank" rel="noopener" href="https://可以点开这个链接下载最新版。">https://可以点开这个链接下载最新版。</a></p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110027.PNG" style="zoom:50%;"></p>
+<p>如图所示，服务器IP、服务器端口、密码需要修改，填入<code>/etc/shadowsocks.json</code>配置文件里的东西就行了。点击<code>确定</code>按钮。</p>
+<p>客户端的Shadowsocks同样需要一些设置。</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110055.PNG" style="zoom:50%;"></p>
+<ul>
+<li><p><code>系统代理模式</code>选择<code>PAC模式</code></p>
+</li>
+<li><p><code>代理规则</code>选择<code>绕过局域网和大陆</code></p>
+</li>
+<li><p><code>PAC</code>那里可以选择<code>更新为GFWList</code>，稍等片刻会弹出提示更新成功。</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110122.PNG" style="zoom:50%;"></p>
+<p>以上步骤结束，就可以打开浏览器试试<a target="_blank" rel="noopener" href="https://www.google.com.hk">Google</a>啦。</p>
+</li>
+</ul>
+<h2 id="Chrome设置科学上网切换"><span class="post-title-index">7. </span><a href="#Chrome设置科学上网切换" class="headerlink" title="Chrome设置科学上网切换"></a>Chrome设置科学上网切换</h2><h3 id="设置插件"><span class="post-title-index">7.1. </span><a href="#设置插件" class="headerlink" title="设置插件"></a>设置插件</h3><p>首先打开chrome商店（在左上角）搜索<code>SwitchyOmega</code>，如图所示：</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110153.PNG" style="zoom:50%;"></p>
+<p>点击安装，会出现一个小图标，如下图：</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110219.PNG" alt></p>
+<p>右键这个图标，选择<strong>选项</strong>，</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110240.PNG" style="zoom:50%;"></p>
+<p>第一次打开选项页面时会有一些提示什么的，全部跳过。</p>
+<p>首先点击<strong>情景模式</strong>，按照下图所示的配置一下：</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110305.PNG" style="zoom: 33%;"></p>
+<p>点击<strong>auto switch</strong>，选择添加规则列表，因为我已经设置好了，这里无法演示，最终效果应该跟下图一样。</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110336.PNG" style="zoom:33%;"></p>
+<p><strong>规则列表</strong>设置如下图，选择<code>AutoProxy</code>，规则列表网址填入内容为：</p>
+<p><code>https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt</code></p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110358.PNG" style="zoom: 50%;"></p>
+<p>填好后点击<strong>立即更新情景模式</strong>，会出现一大堆网址，如下图所示：</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110430.PNG" style="zoom:50%;"></p>
+<p>点击<strong>应用选项</strong>，就OK了。</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110453.PNG" style="zoom:50%;"></p>
+<h3 id="如何应用"><span class="post-title-index">7.2. </span><a href="#如何应用" class="headerlink" title="如何应用"></a>如何应用</h3><p>对于大部分网址，该插件会自动判断是否需要翻墙模式，比如谷歌就会翻墙，百度就不会翻墙。</p>
+<p>当一个网站为翻墙模式时，这个插件的图标会变蓝色，并且当你把鼠标移到插件图标上时，会出现一堆文字，如下图所示：</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110514.PNG" style="zoom:50%;"></p>
+<p>当一个网站不是翻墙模式时，这个插件的图标是黄绿色的，并且当你把鼠标移到插件图标上时，会出现少量文字，其中有<strong>直接连接</strong>的提示，如下图所示。</p>
+<p><strong>直接连接</strong>就是不翻墙的意思，<strong>proxy</strong>是一个单词，即“代理”的意思，代理就是翻墙。</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110541.PNG" style="zoom:67%;"></p>
+<p>对于有些网站，可能不用翻墙模式就能打开，但是网页速度比较慢，或者下载速度比较慢；或者这个网站插件认为不用翻墙，但实际上必须要翻墙才能打开，这时就需要手动设置这个网站为翻墙模式。实现这样的操作有以下两种模式。</p>
+<p>一是临时翻墙，临时翻墙的意思是在chrome没有关闭之前，打开这个网站都会翻墙，但如果关掉了chrome，再打开chrome登这个网站，就有成了不翻墙模式。这个模式对于偶尔用的网站比较适用。操作方法为：左键点击插件图标，左键点击那个扫帚一样的图标（这个图标后面都会有你当前页面的网址，我这里用bing做个演示），在下拉菜单中选择<code>proxy</code>，就使得这个网站临时变成翻墙模式了。同理，如果你想使某个本来使翻墙模式的网站不翻墙，那么就可以点击<code>直接连接</code>。</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110609.PNG" style="zoom:50%;"></p>
+<p>第二种模式是永久翻墙，适用于一些经常需要访问的网站，所谓的永久模式，就是说即使你关闭了chrome，再打开chrome登这个网站，仍然是翻墙模式。设置方法为：点击<strong>添加条件</strong>,如下图。</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110639.PNG" style="zoom:50%;"></p>
+<p>会弹出如下界面，注意画红线的地方。<strong>条件设置</strong>表示你要设置的网址，这里是<code>*.bing.com</code>，网址中的<code>*</code>是通配符的意思，<code>*.bing.com</code>表示所有后缀是<code>.bing.com</code>的网址（如<code>www.bing.com</code>, <code>images.bing.com</code>, <code>wiki.bing.com</code>等等等等），这一栏一般不要修改。情景模式有两个：<code>proxy</code>和<code>直接连接</code>,如果你想设置这个网站为翻墙，就选择<code>proxy</code>，如果像设置为不翻墙，就选择<code>直接连接</code>。选择好后点击<code>添加条件</code>。如果你设置的是翻墙，那么你会发现插件的图标变成了蓝色，表明这个网站当前正在使用翻墙模式。</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110713.PNG" style="zoom:50%;"></p>
+<p>设置一个网站为永久模式后，插件会记录这些网站用什么模式，可以点开插件的选项看看。下面是我的情况，一些网站我设置成了翻墙，而一些网站我设置的是不翻墙，也就是直接连接。如果你点击删除按钮，那么这个网站是否翻墙又回到插件默认的状态了。</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/20220301110735.PNG" style="zoom:50%;"></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E7%A7%91%E5%AD%A6%E4%B8%8A%E7%BD%91/" rel="tag"># 科学上网</a>
+              <a href="/tags/VPS/" rel="tag"># VPS</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/02/12/leetcode-46-47/" rel="prev" title="LeetCode 全排列两道题">
+      <i class="fa fa-chevron-left"></i> LeetCode 全排列两道题
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/02/23/screen-usage/" rel="next" title="Screen命令的使用">
+      Screen命令的使用 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9B%E5%BB%BADroplets"><span class="nav-text">1. 创建Droplets</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BB%E6%9C%BA%E8%AE%BE%E7%BD%AE"><span class="nav-text">2. 主机设置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%99%BB%E5%BD%95%E4%B8%BB%E6%9C%BA"><span class="nav-text">3. 登录主机</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8Shadowsocks"><span class="nav-text">4. 使用Shadowsocks</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8BBR%E5%8A%A0%E9%80%9F"><span class="nav-text">5. 使用BBR加速</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%A2%E6%88%B7%E7%AB%AFShadowsocks%E9%85%8D%E7%BD%AE"><span class="nav-text">6. 客户端Shadowsocks配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Chrome%E8%AE%BE%E7%BD%AE%E7%A7%91%E5%AD%A6%E4%B8%8A%E7%BD%91%E5%88%87%E6%8D%A2"><span class="nav-text">7. Chrome设置科学上网切换</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE%E6%8F%92%E4%BB%B6"><span class="nav-text">7.1. 设置插件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%BA%94%E7%94%A8"><span class="nav-text">7.2. 如何应用</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="TimeOverflow"
+      src="/uploads/avatar.jpg">
+  <p class="site-author-name" itemprop="name">TimeOverflow</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">16</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/TimeOverflow" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;TimeOverflow" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:zhangz1220@outlook.com" title="E-Mail → mailto:zhangz1220@outlook.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">TimeOverflow</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">102k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">1:33</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'N3GrQmFE8RVjH8Sk6s4B7xnY-9Nh9j0Va',
+      appKey     : '4KwTSki3hoVvxnEwsxogPOKb',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : true,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

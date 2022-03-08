@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.1">
+<meta name="google-site-verification" content="nRdQ64asSdtMIPKmtAL6qJO9Ka3rBCML55licirmHbo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/panda-apple.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/panda-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/panda-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"timeoverflow.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="整理了一下 GradCAM 的代码实现，因为还没有阅读原文，所以并没有解释细节，只是记录一下对于一份现成的代码，如何整理为我所用。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Grad-CAM 的 PyTorch 应用">
+<meta property="og:url" content="https://timeoverflow.github.io/2021/11/10/grad-cam/index.html">
+<meta property="og:site_name" content="时间溢出的地方">
+<meta property="og:description" content="整理了一下 GradCAM 的代码实现，因为还没有阅读原文，所以并没有解释细节，只是记录一下对于一份现成的代码，如何整理为我所用。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-11-10T14:37:07.000Z">
+<meta property="article:modified_time" content="2021-11-10T14:49:55.529Z">
+<meta property="article:author" content="TimeOverflow">
+<meta property="article:tag" content="GradCAM">
+<meta property="article:tag" content="可解释性">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://timeoverflow.github.io/2021/11/10/grad-cam/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Grad-CAM 的 PyTorch 应用 | 时间溢出的地方</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">时间溢出的地方</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/TimeOverflow" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://timeoverflow.github.io/2021/11/10/grad-cam/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/uploads/avatar.jpg">
+      <meta itemprop="name" content="TimeOverflow">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="时间溢出的地方">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Grad-CAM 的 PyTorch 应用
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-11-10 22:37:07 / 修改时间：22:49:55" itemprop="dateCreated datePublished" datetime="2021-11-10T22:37:07+08:00">2021-11-10</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/ML-and-DL/" itemprop="url" rel="index"><span itemprop="name">ML and DL</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2021/11/10/grad-cam/" class="post-meta-item leancloud_visitors" data-flag-title="Grad-CAM 的 PyTorch 应用" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2021/11/10/grad-cam/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2021/11/10/grad-cam/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>9.5k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>9 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>整理了一下 GradCAM 的代码实现，因为还没有阅读原文，所以并没有解释细节，只是记录一下对于一份现成的代码，如何整理为我所用。</p>
+<span id="more"></span>
+<h2 id="概述"><span class="post-title-index">1. </span><a href="#概述" class="headerlink" title="概述"></a>概述</h2><blockquote>
+<p>Grad-CAM 概述：给定图像和感兴趣的类别作为输入，我们通过模型的 CNN 部分前向传播图像，然后通过特定于任务的计算获得该类别的原始分数。 除了期望的类别（虎），所有类别的梯度都设置为零，该类别设置为 1。然后将该信号反向传播到卷积特征图，我们将其结合起来计算粗略的 Grad-CAM 定位（ 蓝色热图）它表示模型在做出特定决策时必须查看的位置。 最后，我们将热图与反向传播逐点相乘，以获得高分辨率和特定于概念的引导式 Grad-CAM 可视化 <sup><a href="#fn_1" id="reffn_1">1</a></sup>。</p>
+</blockquote>
+<blockquote id="fn_1">
+<sup>1</sup>. 参考 <a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/395114295">PyTorch 实现 GradCAM</a><a href="#reffn_1" title="Jump back to footnote [1] in the text."> &#8617;</a>
+</blockquote>
+<h2 id="PyTorch-实现与应用"><span class="post-title-index">2. </span><a href="#PyTorch-实现与应用" class="headerlink" title="PyTorch 实现与应用"></a>PyTorch 实现与应用</h2><p>所参考和使用的是 <a target="_blank" rel="noopener" href="https://github.com/yizt/Grad-CAM.pytorch">这个代码</a></p>
+<p>这份代码针对常用的模型所写，如 <code>VGG</code>, <code>ResNet</code> 等等，并且输入是 $224 \times 224$ 的 3 通道彩色图片，对于自己的网络权重，以及对于输入大小并非 $224 \times 224$ 甚至不是彩色图像而是灰度图像的情况，需要自行改动。</p>
+<p>该代码库中的核心文件是 <code>interpretability/grad_cam.py</code> 和 <code>interpretability/guided_back_propagation.py</code>，它们实现了 Grad-CAM 这件事。</p>
+<ol>
+<li><p><code>interpretability/guided_back_propagation.py</code></p>
+<p>这个文件的代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># -*- coding: utf-8 -*-</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">Created on 2019/8/4 上午9:45</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">@author: mick.yi</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> torch <span class="keyword">import</span> nn</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">GuidedBackPropagation</span>(<span class="title class_ inherited__">object</span>):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, net</span>):</span><br><span class="line">        self.net = net</span><br><span class="line">        <span class="keyword">for</span> (name, module) <span class="keyword">in</span> self.net.named_modules():</span><br><span class="line">            <span class="keyword">if</span> <span class="built_in">isinstance</span>(module, nn.ReLU):</span><br><span class="line">                module.register_backward_hook(self.backward_hook)</span><br><span class="line">        self.net.<span class="built_in">eval</span>()</span><br><span class="line"></span><br><span class="line"><span class="meta">    @classmethod</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">backward_hook</span>(<span class="params">cls, module, grad_in, grad_out</span>):</span><br><span class="line">        <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        :param module:</span></span><br><span class="line"><span class="string">        :param grad_in: tuple,长度为1</span></span><br><span class="line"><span class="string">        :param grad_out: tuple,长度为1</span></span><br><span class="line"><span class="string">        :return: tuple(new_grad_in,)</span></span><br><span class="line"><span class="string">        &quot;&quot;&quot;</span></span><br><span class="line">        <span class="keyword">return</span> torch.clamp(grad_in[<span class="number">0</span>], <span class="built_in">min</span>=<span class="number">0.0</span>),</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__call__</span>(<span class="params">self, inputs, index=<span class="literal">None</span></span>):</span><br><span class="line">        <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        :param inputs: [1,3,H,W]</span></span><br><span class="line"><span class="string">        :param index: class_id</span></span><br><span class="line"><span class="string">        :return:</span></span><br><span class="line"><span class="string">        &quot;&quot;&quot;</span></span><br><span class="line">        self.net.zero_grad()</span><br><span class="line">        output = self.net(inputs)  <span class="comment"># [1,num_classes]</span></span><br><span class="line">        <span class="keyword">if</span> index <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">            index = np.argmax(output.cpu().data.numpy())</span><br><span class="line">        target = output[<span class="number">0</span>][index]</span><br><span class="line"></span><br><span class="line">        target.backward()</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> inputs.grad[<span class="number">0</span>]  <span class="comment"># [3,H,W]</span></span><br></pre></td></tr></table></figure>
+<p>对于这份代码，我没有进行任何更改（我的输入图像是 $800 \times 750$ 的单通道灰度图）。从引用来看，这份代码是最『 原始』的，只引用了最基本的库，而没有引用这份代码库里的其他代码。</p>
+</li>
+<li><p><code>interpretability/grad_cam.py</code></p>
+<p>这个文件的代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># -*- coding: utf-8 -*-</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">Created on 2019/8/4 上午9:37</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">@author: mick.yi</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">GradCAM</span>(<span class="title class_ inherited__">object</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    1: 网络不更新梯度,输入需要梯度更新</span></span><br><span class="line"><span class="string">    2: 使用目标类别的得分做反向传播</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, net, layer_name</span>):</span><br><span class="line">        self.net = net</span><br><span class="line">        self.layer_name = layer_name</span><br><span class="line">        self.feature = <span class="literal">None</span></span><br><span class="line">        self.gradient = <span class="literal">None</span></span><br><span class="line">        self.net.<span class="built_in">eval</span>()</span><br><span class="line">        self.handlers = []</span><br><span class="line">        self._register_hook()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">_get_features_hook</span>(<span class="params">self, module, <span class="built_in">input</span>, output</span>):</span><br><span class="line">        self.feature = output</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;feature shape:&#123;&#125;&quot;</span>.<span class="built_in">format</span>(output.size()))</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">_get_grads_hook</span>(<span class="params">self, module, input_grad, output_grad</span>):</span><br><span class="line">        <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        :param input_grad: tuple, input_grad[0]: None</span></span><br><span class="line"><span class="string">                                   input_grad[1]: weight</span></span><br><span class="line"><span class="string">                                   input_grad[2]: bias</span></span><br><span class="line"><span class="string">        :param output_grad:tuple,长度为1</span></span><br><span class="line"><span class="string">        :return:</span></span><br><span class="line"><span class="string">        &quot;&quot;&quot;</span></span><br><span class="line">        self.gradient = output_grad[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">_register_hook</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">for</span> (name, module) <span class="keyword">in</span> self.net.named_modules():</span><br><span class="line">            <span class="keyword">if</span> name == self.layer_name:</span><br><span class="line">                self.handlers.append(module.register_forward_hook(self._get_features_hook))</span><br><span class="line">                self.handlers.append(module.register_backward_hook(self._get_grads_hook))</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">remove_handlers</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">for</span> handle <span class="keyword">in</span> self.handlers:</span><br><span class="line">            handle.remove()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__call__</span>(<span class="params">self, inputs, index</span>):</span><br><span class="line">        <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        :param inputs: [1,3,H,W]</span></span><br><span class="line"><span class="string">        :param index: class id</span></span><br><span class="line"><span class="string">        :return:</span></span><br><span class="line"><span class="string">        &quot;&quot;&quot;</span></span><br><span class="line">        self.net.zero_grad()</span><br><span class="line">        output = self.net(inputs)  <span class="comment"># [1,num_classes]</span></span><br><span class="line">        <span class="keyword">if</span> index <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">            index = np.argmax(output.cpu().data.numpy())</span><br><span class="line">        target = output[<span class="number">0</span>][index]</span><br><span class="line"></span><br><span class="line">        inputs.retain_grad()</span><br><span class="line">        target.backward()</span><br><span class="line"></span><br><span class="line">        gradient = self.gradient[<span class="number">0</span>].cpu().data.numpy()  <span class="comment"># [C,H,W]</span></span><br><span class="line">        weight = np.mean(gradient, axis=(<span class="number">1</span>, <span class="number">2</span>))  <span class="comment"># [C]</span></span><br><span class="line"></span><br><span class="line">        feature = self.feature[<span class="number">0</span>].cpu().data.numpy()  <span class="comment"># [C,H,W]</span></span><br><span class="line"></span><br><span class="line">        cam = feature * weight[:, np.newaxis, np.newaxis]  <span class="comment"># [C,H,W]</span></span><br><span class="line">        cam = np.<span class="built_in">sum</span>(cam, axis=<span class="number">0</span>)  <span class="comment"># [H,W]</span></span><br><span class="line">        cam = np.maximum(cam, <span class="number">0</span>)  <span class="comment"># ReLU</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># 数值归一化</span></span><br><span class="line">        cam -= np.<span class="built_in">min</span>(cam)</span><br><span class="line">        cam /= np.<span class="built_in">max</span>(cam)</span><br><span class="line">        <span class="comment"># resize to 224*224</span></span><br><span class="line">     	<span class="comment"># 下面是有改动的，resize 到多大，跟输入图像的大小有关，原文件是 resize 到 (224, 224) </span></span><br><span class="line">     	<span class="comment"># 实际可以根据自己的输入 resize，输入大小是 (w, h)，则 resize 到 (w, h)</span></span><br><span class="line">     	<span class="comment"># 此处不需要考虑通道</span></span><br><span class="line">        cam = cv2.resize(cam, (<span class="number">800</span>, <span class="number">750</span>))</span><br><span class="line">        <span class="keyword">return</span> cam</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">GradCamPlusPlus</span>(<span class="title class_ inherited__">GradCAM</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, net, layer_name</span>):</span><br><span class="line">        <span class="built_in">super</span>(GradCamPlusPlus, self).__init__(net, layer_name)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__call__</span>(<span class="params">self, inputs, index</span>):</span><br><span class="line">        <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        :param inputs: [1,3,H,W]</span></span><br><span class="line"><span class="string">        :param index: class id</span></span><br><span class="line"><span class="string">        :return:</span></span><br><span class="line"><span class="string">        &quot;&quot;&quot;</span></span><br><span class="line">        self.net.zero_grad()</span><br><span class="line">        output = self.net(inputs)  <span class="comment"># [1,num_classes]</span></span><br><span class="line">        <span class="keyword">if</span> index <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">            index = np.argmax(output.cpu().data.numpy())</span><br><span class="line">        target = output[<span class="number">0</span>][index]</span><br><span class="line"></span><br><span class="line">        inputs.retain_grad()</span><br><span class="line">        target.backward()</span><br><span class="line"></span><br><span class="line">        gradient = self.gradient[<span class="number">0</span>].cpu().data.numpy()  <span class="comment"># [C,H,W]</span></span><br><span class="line">        gradient = np.maximum(gradient, <span class="number">0.</span>)  <span class="comment"># ReLU</span></span><br><span class="line">        indicate = np.where(gradient &gt; <span class="number">0</span>, <span class="number">1.</span>, <span class="number">0.</span>)  <span class="comment"># 示性函数</span></span><br><span class="line">        norm_factor = np.<span class="built_in">sum</span>(gradient, axis=(<span class="number">1</span>, <span class="number">2</span>))  <span class="comment"># [C]归一化</span></span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(norm_factor)):</span><br><span class="line">            norm_factor[i] = <span class="number">1.</span> / norm_factor[i] <span class="keyword">if</span> norm_factor[i] &gt; <span class="number">0.</span> <span class="keyword">else</span> <span class="number">0.</span>  <span class="comment"># 避免除零</span></span><br><span class="line">        alpha = indicate * norm_factor[:, np.newaxis, np.newaxis]  <span class="comment"># [C,H,W]</span></span><br><span class="line"></span><br><span class="line">        weight = np.<span class="built_in">sum</span>(gradient * alpha, axis=(<span class="number">1</span>, <span class="number">2</span>))  <span class="comment"># [C]  alpha*ReLU(gradient)</span></span><br><span class="line"></span><br><span class="line">        feature = self.feature[<span class="number">0</span>].cpu().data.numpy()  <span class="comment"># [C,H,W]</span></span><br><span class="line"></span><br><span class="line">        cam = feature * weight[:, np.newaxis, np.newaxis]  <span class="comment"># [C,H,W]</span></span><br><span class="line">        cam = np.<span class="built_in">sum</span>(cam, axis=<span class="number">0</span>)  <span class="comment"># [H,W]</span></span><br><span class="line">        <span class="comment"># cam = np.maximum(cam, 0)  # ReLU</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># 数值归一化</span></span><br><span class="line">        cam -= np.<span class="built_in">min</span>(cam)</span><br><span class="line">        cam /= np.<span class="built_in">max</span>(cam)</span><br><span class="line">        <span class="comment"># resize to 224*224</span></span><br><span class="line">        <span class="comment"># 下面是有改动的，resize 到多大，跟输入图像的大小有关，原文件是 resize 到 (224, 224) </span></span><br><span class="line">     	<span class="comment"># 实际可以根据自己的输入 resize，输入大小是 (w, h)，则 resize 到 (w, h)</span></span><br><span class="line">     	<span class="comment"># 此处不需要考虑通道</span></span><br><span class="line">        cam = cv2.resize(cam, (<span class="number">800</span>, <span class="number">750</span>))</span><br><span class="line">        <span class="keyword">return</span> cam</span><br></pre></td></tr></table></figure>
+<p>这个文件包含两个类：<code>GradCAM</code> 和 <code>GeadCamPlusPlus</code>，分别实现了 Grad-CAM 和 Grad-CAM++。这两个代码是需要改动的，主要是每个类的 <code>__call__</code> 方法的倒数第二行的 <code>resize</code> 函数的参数，resize 到多少，原文件是写死了直接写成 <code>(224, 224)</code> ，自己用时可以改成自己的输入图像尺寸，OpenCV 的 resize 格式为 <code>(w, h)</code>。</p>
+</li>
+</ol>
+<p>最后实际的入口是 <code>main.py</code>，这部分也是做了改动的，改动的代码如下，具体细节写在了代码的注释里：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> torchvision <span class="keyword">import</span> transforms</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">from</span> PIL <span class="keyword">import</span> Image</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> skimage <span class="keyword">import</span> io</span><br><span class="line"><span class="keyword">from</span> torch <span class="keyword">import</span> nn</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> interpretability.grad_cam <span class="keyword">import</span> GradCAM, GradCamPlusPlus</span><br><span class="line"><span class="keyword">from</span> interpretability.guided_back_propagation <span class="keyword">import</span> GuidedBackPropagation</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">原来的代码中最开始还有个 get_net 函数，用于根据函数名获取 torchvision.models 中的模型类，自己使用的时候</span></span><br><span class="line"><span class="string">网络都是自己定义的，因此把这个函数删掉了，改为后面手动解决</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_last_conv_name</span>(<span class="params">net</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    获取网络的最后一个卷积层的名字</span></span><br><span class="line"><span class="string">    :param net:</span></span><br><span class="line"><span class="string">    :return:</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    layer_name = <span class="literal">None</span></span><br><span class="line">    <span class="keyword">for</span> name, m <span class="keyword">in</span> net.named_modules():</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">isinstance</span>(m, nn.Conv2d):</span><br><span class="line">            layer_name = name</span><br><span class="line">    <span class="keyword">return</span> layer_name</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">prepare_input 在原文件的定义如下</span></span><br><span class="line"><span class="string">它的输入 image 是一个图片的 numpy 数组除以 255，shape = (224, 224, 3)</span></span><br><span class="line"><span class="string">def prepare_input(image):</span></span><br><span class="line"><span class="string">    image = image.copy()</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    # 归一化</span></span><br><span class="line"><span class="string">    means = np.array([0.485, 0.456, 0.406])</span></span><br><span class="line"><span class="string">    stds = np.array([0.229, 0.224, 0.225])</span></span><br><span class="line"><span class="string">    image -= means</span></span><br><span class="line"><span class="string">    image /= stds</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    image = np.ascontiguousarray(np.transpose(image, (2, 0, 1)))  # channel first</span></span><br><span class="line"><span class="string">    image = image[np.newaxis, ...]  # 增加batch维</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    return torch.tensor(image, requires_grad=True)</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">prepare_input</span>(<span class="params">image_path</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    我的改动是直接输入图像路径，用 PIL 和 torchvision.transforms 处理，不预先读取为 numpy 数组了</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    image = Image.<span class="built_in">open</span>(image_path)</span><br><span class="line">    image = transforms.ToTensor()(image)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> torch.tensor(image.unsqueeze(<span class="number">0</span>), requires_grad=<span class="literal">True</span>).cuda()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">gen_cam</span>(<span class="params">image, mask</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    生成CAM图</span></span><br><span class="line"><span class="string">    :param image: [H,W,C],原始图像</span></span><br><span class="line"><span class="string">    :param mask: [H,W],范围0~1</span></span><br><span class="line"><span class="string">    :return: tuple(cam, heatmap)</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># mask转为heatmap</span></span><br><span class="line">    heatmap = cv2.applyColorMap(np.uint8(<span class="number">255</span> * mask), cv2.COLORMAP_JET)</span><br><span class="line">    heatmap = np.float32(heatmap) / <span class="number">255</span></span><br><span class="line">    heatmap = heatmap[..., ::-<span class="number">1</span>]  <span class="comment"># gbr to rgb</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 合并heatmap到原始图像</span></span><br><span class="line">    cam = heatmap + np.float32(image)</span><br><span class="line">    <span class="keyword">return</span> norm_image(cam), (heatmap * <span class="number">255</span>).astype(np.uint8)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">norm_image</span>(<span class="params">image</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    标准化图像</span></span><br><span class="line"><span class="string">    :param image: [H,W,C]</span></span><br><span class="line"><span class="string">    :return:</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    image = image.copy()</span><br><span class="line">    image -= np.<span class="built_in">max</span>(np.<span class="built_in">min</span>(image), <span class="number">0</span>)</span><br><span class="line">    image /= np.<span class="built_in">max</span>(image)</span><br><span class="line">    image *= <span class="number">255.</span></span><br><span class="line">    <span class="keyword">return</span> np.uint8(image)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">gen_gb</span>(<span class="params">grad</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    生guided back propagation 输入图像的梯度</span></span><br><span class="line"><span class="string">    :param grad: tensor,[3,H,W]</span></span><br><span class="line"><span class="string">    :return:</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 标准化</span></span><br><span class="line">    grad = grad.data.cpu().numpy()</span><br><span class="line">    gb = np.transpose(grad, (<span class="number">1</span>, <span class="number">2</span>, <span class="number">0</span>))</span><br><span class="line">    <span class="keyword">return</span> gb</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">save_image</span>(<span class="params">image_dicts, input_image_name, network, output_dir</span>):</span><br><span class="line">    prefix = os.path.splitext(input_image_name)[<span class="number">0</span>]</span><br><span class="line">    <span class="keyword">for</span> key, image <span class="keyword">in</span> image_dicts.items():</span><br><span class="line">        io.imsave(os.path.join(output_dir, key, <span class="string">&#x27;&#123;&#125;-&#123;&#125;-&#123;&#125;.jpg&#x27;</span>.<span class="built_in">format</span>(prefix, network, key)), image)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>(<span class="params">image_path, output_dir</span>):</span><br><span class="line">    class_id = <span class="literal">None</span></span><br><span class="line">    layer_name = <span class="literal">None</span></span><br><span class="line">    network = <span class="string">&quot;resnet18&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 输入</span></span><br><span class="line">    <span class="comment"># 这里的 img 读取成了 3 通道的图，即不管是彩图还是灰度图，都按 RGB 图读</span></span><br><span class="line">    <span class="comment"># 这主要是为了后面作图</span></span><br><span class="line">    img = cv2.imread(image_path)</span><br><span class="line">    img = np.float32(img) / <span class="number">255</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 这个是实际输入到网络的，shape = (1, c, h, w)</span></span><br><span class="line">    inputs = prepare_input(image_path)  <span class="comment"># tensor</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 输出图像</span></span><br><span class="line">    image_dict = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Grad-CAM</span></span><br><span class="line">    <span class="comment"># 下面的 net 其实是用了全局变量了，需要优化</span></span><br><span class="line">    layer_name = get_last_conv_name(net) <span class="keyword">if</span> layer_name <span class="keyword">is</span> <span class="literal">None</span> <span class="keyword">else</span> layer_name</span><br><span class="line">    grad_cam = GradCAM(net, layer_name)</span><br><span class="line">    mask = grad_cam(inputs, class_id)  <span class="comment"># cam mask</span></span><br><span class="line">    image_dict[<span class="string">&#x27;cam&#x27;</span>], image_dict[<span class="string">&#x27;heatmap&#x27;</span>] = gen_cam(img, mask)</span><br><span class="line">    grad_cam.remove_handlers()</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Grad-CAM++</span></span><br><span class="line">    grad_cam_plus_plus = GradCamPlusPlus(net, layer_name)</span><br><span class="line">    mask_plus_plus = grad_cam_plus_plus(inputs, class_id)  <span class="comment"># cam mask</span></span><br><span class="line">    image_dict[<span class="string">&#x27;cam++&#x27;</span>], image_dict[<span class="string">&#x27;heatmap++&#x27;</span>] = gen_cam(img, mask_plus_plus)</span><br><span class="line">    grad_cam_plus_plus.remove_handlers()</span><br><span class="line"></span><br><span class="line">    <span class="comment"># GuidedBackPropagation</span></span><br><span class="line">    gbp = GuidedBackPropagation(net)</span><br><span class="line">    inputs.grad.zero_()  <span class="comment"># 梯度置零</span></span><br><span class="line">    grad = gbp(inputs)</span><br><span class="line"></span><br><span class="line">    gb = gen_gb(grad)</span><br><span class="line">    image_dict[<span class="string">&#x27;gb&#x27;</span>] = norm_image(gb)</span><br><span class="line">    <span class="comment"># 生成Guided Grad-CAM</span></span><br><span class="line">    cam_gb = gb * mask[..., np.newaxis]</span><br><span class="line">    image_dict[<span class="string">&#x27;cam_gb&#x27;</span>] = norm_image(cam_gb)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> key <span class="keyword">in</span> image_dict.keys():</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> os.path.exists(os.path.join(output_dir, key)):</span><br><span class="line">            os.mkdir(os.path.join(output_dir, key))</span><br><span class="line">    save_image(image_dict, os.path.basename(image_path), network, output_dir)</span><br><span class="line">    <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    device = torch.device(<span class="string">&quot;cuda&quot;</span> <span class="keyword">if</span> torch.cuda.is_available() <span class="keyword">else</span> <span class="string">&quot;cpu&quot;</span>)</span><br><span class="line"></span><br><span class="line">    checkpoint = <span class="string">&quot;best_model.pth&quot;</span></span><br><span class="line"></span><br><span class="line">    net = torch.load(checkpoint).to(device)</span><br><span class="line">    <span class="comment"># net.train()</span></span><br><span class="line"></span><br><span class="line">    output_dir = <span class="string">&quot;cam_images/&quot;</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> os.path.exists(output_dir):</span><br><span class="line">        os.makedirs(output_dir)</span><br><span class="line"></span><br><span class="line">    image_dir = <span class="string">&quot;input_images/&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> fname <span class="keyword">in</span> os.listdir(image_dir):</span><br><span class="line">        image_path = image_dir + fname</span><br><span class="line">        main(image_path, output_dir)</span><br><span class="line">        <span class="built_in">print</span>(fname)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>另外一个 star 更多的实现：<a target="_blank" rel="noopener" href="https://github.com/jacobgil/pytorch-grad-cam">jacobgil/pytorch-grad-cam</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/GradCAM/" rel="tag"># GradCAM</a>
+              <a href="/tags/%E5%8F%AF%E8%A7%A3%E9%87%8A%E6%80%A7/" rel="tag"># 可解释性</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/05/19/linux-notes/" rel="prev" title="Linux 文件权限修改">
+      <i class="fa fa-chevron-left"></i> Linux 文件权限修改
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/11/10/pytorch-hook/" rel="next" title="PyTorch 中的 hook">
+      PyTorch 中的 hook <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text">1. 概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#PyTorch-%E5%AE%9E%E7%8E%B0%E4%B8%8E%E5%BA%94%E7%94%A8"><span class="nav-text">2. PyTorch 实现与应用</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="TimeOverflow"
+      src="/uploads/avatar.jpg">
+  <p class="site-author-name" itemprop="name">TimeOverflow</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">16</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/TimeOverflow" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;TimeOverflow" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:zhangz1220@outlook.com" title="E-Mail → mailto:zhangz1220@outlook.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">TimeOverflow</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">102k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">1:33</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'N3GrQmFE8RVjH8Sk6s4B7xnY-9Nh9j0Va',
+      appKey     : '4KwTSki3hoVvxnEwsxogPOKb',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : true,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.1">
+<meta name="google-site-verification" content="nRdQ64asSdtMIPKmtAL6qJO9Ka3rBCML55licirmHbo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/panda-apple.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/panda-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/panda-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"timeoverflow.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="hook 是程序设计领域一个概念，引用一个博客的说法：  In general, “hooks” are functions that automatically execute after a particular event. 1   1. What are hooks? &amp;#8617;   Hook 是 PyTorch 中一个十分有用的特性。利用它，我们可以不必改变网络输入输出的结构，方便地">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PyTorch 中的 hook">
+<meta property="og:url" content="https://timeoverflow.github.io/2021/11/10/pytorch-hook/index.html">
+<meta property="og:site_name" content="时间溢出的地方">
+<meta property="og:description" content="hook 是程序设计领域一个概念，引用一个博客的说法：  In general, “hooks” are functions that automatically execute after a particular event. 1   1. What are hooks? &amp;#8617;   Hook 是 PyTorch 中一个十分有用的特性。利用它，我们可以不必改变网络输入输出的结构，方便地">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-11-10T14:47:20.000Z">
+<meta property="article:modified_time" content="2021-11-10T14:50:34.721Z">
+<meta property="article:author" content="TimeOverflow">
+<meta property="article:tag" content="Pytorch Hook">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://timeoverflow.github.io/2021/11/10/pytorch-hook/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>PyTorch 中的 hook | 时间溢出的地方</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">时间溢出的地方</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/TimeOverflow" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://timeoverflow.github.io/2021/11/10/pytorch-hook/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/uploads/avatar.jpg">
+      <meta itemprop="name" content="TimeOverflow">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="时间溢出的地方">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          PyTorch 中的 hook
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-11-10 22:47:20 / 修改时间：22:50:34" itemprop="dateCreated datePublished" datetime="2021-11-10T22:47:20+08:00">2021-11-10</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/PyTorch/" itemprop="url" rel="index"><span itemprop="name">PyTorch</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2021/11/10/pytorch-hook/" class="post-meta-item leancloud_visitors" data-flag-title="PyTorch 中的 hook" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2021/11/10/pytorch-hook/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2021/11/10/pytorch-hook/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>17k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>15 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>hook 是程序设计领域一个概念，引用一个博客的说法：</p>
+<blockquote>
+<p>In general, “hooks” are functions that automatically execute after a particular event. <sup><a href="#fn_1" id="reffn_1">1</a></sup></p>
+</blockquote>
+<blockquote id="fn_1">
+<sup>1</sup>. <a target="_blank" rel="noopener" href="https://medium.com/the-dl/how-to-use-pytorch-hooks-5041d777f904#:~:text=In%20general%2C%20%E2%80%9Chooks%E2%80%9D%20are%20functions%20that%20automatically%20execute%20after%20a%20particular%20event">What are hooks?</a><a href="#reffn_1" title="Jump back to footnote [1] in the text."> &#8617;</a>
+</blockquote>
+<blockquote>
+<p>Hook 是 PyTorch 中一个十分有用的特性。利用它，我们可以不必改变网络输入输出的结构，方便地获取、改变网络中间层变量的值和梯度。这个功能被广泛用于可视化神经网络中间层的 feature、gradient，从而诊断神经网络中可能出现的问题，分析网络有效性。<sup><a href="#fn_2" id="reffn_2">2</a></sup></p>
+</blockquote>
+<blockquote id="fn_2">
+<sup>2</sup>. <a target="_blank" rel="noopener" href="https://cloud.tencent.com/developer/article/1475430#:~:text=Hook%20%E6%98%AF%20PyTorch%20%E4%B8%AD%E4%B8%80%E4%B8%AA%E5%8D%81%E5%88%86%E6%9C%89%E7%94%A8%E7%9A%84%E7%89%B9%E6%80%A7%E3%80%82%E5%88%A9%E7%94%A8%E5%AE%83%EF%BC%8C%E6%88%91%E4%BB%AC%E5%8F%AF%E4%BB%A5%E4%B8%8D%E5%BF%85%E6%94%B9%E5%8F%98%E7%BD%91%E7%BB%9C%E8%BE%93%E5%85%A5%E8%BE%93%E5%87%BA%E7%9A%84%E7%BB%93%E6%9E%84%EF%BC%8C%E6%96%B9%E4%BE%BF%E5%9C%B0%E8%8E%B7%E5%8F%96%E3%80%81%E6%94%B9%E5%8F%98%E7%BD%91%E7%BB%9C%E4%B8%AD%E9%97%B4%E5%B1%82%E5%8F%98%E9%87%8F%E7%9A%84%E5%80%BC%E5%92%8C%E6%A2%AF%E5%BA%A6%E3%80%82%E8%BF%99%E4%B8%AA%E5%8A%9F%E8%83%BD%E8%A2%AB%E5%B9%BF%E6%B3%9B%E7%94%A8%E4%BA%8E%E5%8F%AF%E8%A7%86%E5%8C%96%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E4%B8%AD%E9%97%B4%E5%B1%82%E7%9A%84%20feature%E3%80%81gradient%EF%BC%8C%E4%BB%8E%E8%80%8C%E8%AF%8A%E6%96%AD%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E4%B8%AD%E5%8F%AF%E8%83%BD%E5%87%BA%E7%8E%B0%E7%9A%84%E9%97%AE%E9%A2%98%EF%BC%8C%E5%88%86%E6%9E%90%E7%BD%91%E7%BB%9C%E6%9C%89%E6%95%88%E6%80%A7">Hook 是 PyTorch 中一个十分有用的特性</a><a href="#reffn_2" title="Jump back to footnote [2] in the text."> &#8617;</a>
+</blockquote>
+<p>在 PyTorch 中，hook 可用于 <code>Tensor</code> 或 <code>nn.Module</code> 中。</p>
+<span id="more"></span>
+<h2 id="Hook-For-Tensor"><span class="post-title-index">1. </span><a href="#Hook-For-Tensor" class="headerlink" title="Hook For Tensor"></a>Hook For <code>Tensor</code></h2><p>在 PyTorch 的计算图（computation graph）中，只有叶子结点（leaf nodes）的变量会保留梯度。而所有中间变量的梯度只被用于反向传播，一旦完成反向传播，中间变量的梯度就将自动释放，从而节约内存。举个例子：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"></span><br><span class="line">x = torch.tensor(<span class="number">2.0</span>, requires_grad=<span class="literal">True</span>)</span><br><span class="line">y = torch.tensor(<span class="number">3.0</span>, requires_grad=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">w = torch.tensor(<span class="number">4.0</span>, requires_grad=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">z = x + y</span><br><span class="line">o = w * z</span><br><span class="line"></span><br><span class="line">o.backward()</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(x.grad)</span><br><span class="line"><span class="built_in">print</span>(y.grad)</span><br><span class="line"><span class="built_in">print</span>(w.grad)</span><br><span class="line"><span class="built_in">print</span>(z.grad)</span><br><span class="line"><span class="built_in">print</span>(o.grad)</span><br><span class="line"></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">output:</span></span><br><span class="line"><span class="string">tensor(4.)</span></span><br><span class="line"><span class="string">tensor(4.)</span></span><br><span class="line"><span class="string">tensor(5.)</span></span><br><span class="line"><span class="string">None</span></span><br><span class="line"><span class="string">None</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+<p>其中只有 <code>x</code>, <code>y</code>, <code>w</code> 三个叶子变量的梯度在 <code>backward</code> 操作之后还能访问到，<code>z</code> 和 <code>o</code> 是中间变量（<code>o</code> 是最终结果变量，但也不是叶子结点，在 <code>backward</code> 这个操作上算是中间变量），不保留梯度，输出它们的 <code>grad</code> 属性是 <code>None</code>。</p>
+<p>如果需要保存中间结点的梯度，则需要对中间变量使用 <code>retain_grad()</code> 方法，如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"></span><br><span class="line">x = torch.tensor(<span class="number">2.0</span>, requires_grad=<span class="literal">True</span>)</span><br><span class="line">y = torch.tensor(<span class="number">3.0</span>, requires_grad=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">w = torch.tensor(<span class="number">4.0</span>, requires_grad=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">z = x + y</span><br><span class="line">z.retain_grad()</span><br><span class="line">o = w * z</span><br><span class="line">o.retain_grad()</span><br><span class="line"></span><br><span class="line">o.backward()</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(x.grad)</span><br><span class="line"><span class="built_in">print</span>(y.grad)</span><br><span class="line"><span class="built_in">print</span>(w.grad)</span><br><span class="line"><span class="built_in">print</span>(z.grad)</span><br><span class="line"><span class="built_in">print</span>(o.grad)</span><br><span class="line"></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">output:</span></span><br><span class="line"><span class="string">tensor(4.)</span></span><br><span class="line"><span class="string">tensor(4.)</span></span><br><span class="line"><span class="string">tensor(5.)</span></span><br><span class="line"><span class="string">tensor(4.)</span></span><br><span class="line"><span class="string">tensor(1.)</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+<p> 这样中间变量的梯度在反向传播之后也可以保存并被访问到。</p>
+<p>但是，这种加 <code>retain_grad()</code> 的方案会增加内存占用，并不是个好办法，对此的一种替代方案，就是用 hook 保存中间变量的梯度。</p>
+<p>对于中间变量 <code>z</code>，hook 的使用方式为：<code>z.register_hook(hook_fn)</code>，其中 <code>hook_fn</code>为一个用户自定义的函数，其签名为：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hook_fn(grad) -&gt; Tensor <span class="keyword">or</span> <span class="literal">None</span></span><br></pre></td></tr></table></figure>
+<p>它的输入为变量 z 的梯度（这是固定的），输出为一个 <code>Tensor</code> 或者是 <code>None</code> （<code>None</code> 一般用于直接打印梯度）。<strong>反向传播时，梯度传播到变量 <code>z</code>，再继续向前传播之前，将会传入 <code>hook_fn</code>。</strong>如果 <code>hook_fn</code> 的返回值是 <code>None</code>，那么梯度将不改变，继续向前传播；如果 <code>hook_fn</code> 的返回值是 <code>Tensor</code> 类型，则该 <code>Tensor</code> 将取代 <code>z</code> 原有的梯度，向前传播。</p>
+<p>下面的示例代码中 <code>hook_fn</code> 不改变梯度值，仅仅是打印梯度：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"></span><br><span class="line">x = torch.tensor(<span class="number">2.0</span>, requires_grad=<span class="literal">True</span>)</span><br><span class="line">y = torch.tensor(<span class="number">3.0</span>, requires_grad=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">w = torch.tensor(<span class="number">4.0</span>, requires_grad=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">z = x + y</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">hook_fn</span>(<span class="params">grad</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;z grad:&quot;</span>, grad)</span><br><span class="line"></span><br><span class="line">z.register_hook(hook_fn)    </span><br><span class="line"></span><br><span class="line">o = w * z</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&#x27;=====Start backprop=====&#x27;</span>)</span><br><span class="line">o.backward()</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&#x27;=====End backprop=====&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">运行到这里会产生输出：</span></span><br><span class="line"><span class="string">=====Start backprop=====</span></span><br><span class="line"><span class="string">z grad: tensor(4.)</span></span><br><span class="line"><span class="string">=====End backprop=====</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(x.grad)</span><br><span class="line"><span class="built_in">print</span>(y.grad)</span><br><span class="line"><span class="built_in">print</span>(w.grad)</span><br><span class="line"><span class="built_in">print</span>(z.grad)</span><br><span class="line"><span class="built_in">print</span>(o.grad)</span><br><span class="line"></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">运行到这里会产生输出：</span></span><br><span class="line"><span class="string">tensor(4.)</span></span><br><span class="line"><span class="string">tensor(4.)</span></span><br><span class="line"><span class="string">tensor(5.)</span></span><br><span class="line"><span class="string">None</span></span><br><span class="line"><span class="string">None</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+<p><code>z</code> 绑定了 <code>hook_fn</code> 后，梯度反向传播时将会打印出 <code>o</code> 对 <code>z</code> 的偏导，和上文中 <code>z.retain_grad()</code> 方法得到的 <code>z</code> 的偏导一致。</p>
+<p>如果在 <code>hook_fn</code> 中改变梯度值：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"></span><br><span class="line">x = torch.tensor(<span class="number">2.0</span>, requires_grad=<span class="literal">True</span>)</span><br><span class="line">y = torch.tensor(<span class="number">3.0</span>, requires_grad=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">w = torch.tensor(<span class="number">4.0</span>, requires_grad=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">z = x + y</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">hook_fn</span>(<span class="params">grad</span>):</span><br><span class="line">    g = <span class="number">2</span> * grad</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;z grad multiplies 2:&quot;</span>, g)</span><br><span class="line">    <span class="keyword">return</span> g</span><br><span class="line"></span><br><span class="line">z.register_hook(hook_fn)    </span><br><span class="line"></span><br><span class="line">o = w * z</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&#x27;=====Start backprop=====&#x27;</span>)</span><br><span class="line">o.backward()</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&#x27;=====End backprop=====&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">运行到这里会产生输出：</span></span><br><span class="line"><span class="string">=====Start backprop=====</span></span><br><span class="line"><span class="string">z grad multiplies 2: tensor(8.)</span></span><br><span class="line"><span class="string">=====End backprop=====</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(x.grad)</span><br><span class="line"><span class="built_in">print</span>(y.grad)</span><br><span class="line"><span class="built_in">print</span>(w.grad)</span><br><span class="line"><span class="built_in">print</span>(z.grad)</span><br><span class="line"><span class="built_in">print</span>(o.grad)</span><br><span class="line"></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">运行到这里会产生输出：</span></span><br><span class="line"><span class="string">tensor(8.)</span></span><br><span class="line"><span class="string">tensor(8.)</span></span><br><span class="line"><span class="string">tensor(5.)</span></span><br><span class="line"><span class="string">None</span></span><br><span class="line"><span class="string">None</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+<p>发现 <code>z</code> 的梯度变为两倍后，受其影响，<code>x</code> 和 <code>y</code> 的梯度也都变成了原来的两倍。</p>
+<p>上面说到，若要改变梯度，则 <code>hook_fn</code> 必须返回一个 <code>Tensor</code>，如果仅仅是在 <code>hook_fn</code> 中改变参数 <code>grad</code> 的值，并不会改变变量原有的梯度，更不会影响回传的梯度，把上面的例子做一下改动：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"></span><br><span class="line">x = torch.tensor(<span class="number">2.0</span>, requires_grad=<span class="literal">True</span>)</span><br><span class="line">y = torch.tensor(<span class="number">3.0</span>, requires_grad=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">w = torch.tensor(<span class="number">4.0</span>, requires_grad=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">z = x + y</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">hook_fn</span>(<span class="params">grad</span>):</span><br><span class="line">    grad = grad * <span class="number">2</span></span><br><span class="line"></span><br><span class="line">z.register_hook(hook_fn)</span><br><span class="line">z.register_hook(<span class="keyword">lambda</span> grad: <span class="built_in">print</span>(<span class="string">&quot;z grad&quot;</span>, grad))</span><br><span class="line"></span><br><span class="line">o = w * z</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&#x27;=====Start backprop=====&#x27;</span>)</span><br><span class="line">o.backward()</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&#x27;=====End backprop=====&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">运行到这里会产生输出：</span></span><br><span class="line"><span class="string">=====Start backprop=====</span></span><br><span class="line"><span class="string">z grad tensor(4.)</span></span><br><span class="line"><span class="string">=====End backprop=====</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(x.grad)</span><br><span class="line"><span class="built_in">print</span>(y.grad)</span><br><span class="line"><span class="built_in">print</span>(w.grad)</span><br><span class="line"><span class="built_in">print</span>(z.grad)</span><br><span class="line"><span class="built_in">print</span>(o.grad)</span><br><span class="line"></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">运行到这里会产生输出：</span></span><br><span class="line"><span class="string">tensor(4.)</span></span><br><span class="line"><span class="string">tensor(4.)</span></span><br><span class="line"><span class="string">tensor(5.)</span></span><br><span class="line"><span class="string">None</span></span><br><span class="line"><span class="string">None</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+<p>上面这个例子中，<code>hook_fn</code> 函数虽然对 <code>grad</code> 做了个 inplace 赋值操作，但因为没有返回一个 <code>Tensor</code>，所以并没有真正改变 <code>z</code> 的梯度，从 lambda 函数的输出也可以看出，<code>z</code> 的梯度并没有变成 2 倍，同样 <code>x</code> 和 <code>y</code> 的梯度也没有变化。</p>
+<p>对于一个 <code>Tensor</code>，<code>register_hook</code> 函数可以被调用多次，每次调用的 <code>hook_fn</code> 函数被保存在 <code>tensor._backward_hooks</code>，这是 一个 <code>OrderedDict</code> 对象中，下面举一个例子看：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"></span><br><span class="line">a = torch.tensor(<span class="number">2.0</span>, requires_grad=<span class="literal">True</span>)</span><br><span class="line">b = torch.tensor(<span class="number">3.0</span>, requires_grad=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">c = a * b</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">c_hook</span>(<span class="params">grad</span>):</span><br><span class="line">    <span class="built_in">print</span>(grad)</span><br><span class="line">    <span class="keyword">return</span> grad + <span class="number">2</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># c 在这里注册了两个 hook</span></span><br><span class="line">c.register_hook(c_hook)</span><br><span class="line">c.register_hook(<span class="keyword">lambda</span> grad: <span class="built_in">print</span>(grad))</span><br><span class="line"><span class="comment"># c 是中间变量，需要用 retain_grad 留住梯度，否则后面会被清除</span></span><br><span class="line">c.retain_grad()</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(c._backward_hooks)</span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">output:</span></span><br><span class="line"><span class="string">OrderedDict([(43, &lt;function __main__.c_hook(grad)&gt;),</span></span><br><span class="line"><span class="string">             (44, &lt;function __main__.&lt;lambda&gt;(grad)&gt;),</span></span><br><span class="line"><span class="string">             (45,</span></span><br><span class="line"><span class="string">              &lt;function torch._tensor.Tensor.retain_grad.&lt;locals&gt;.retain_grad_hook(grad)&gt;)])</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">d = torch.tensor(<span class="number">4.0</span>, requires_grad=<span class="literal">True</span>)</span><br><span class="line">d.register_hook(<span class="keyword">lambda</span> grad: grad + <span class="number">100</span>)</span><br><span class="line"></span><br><span class="line">e = c * d</span><br><span class="line"></span><br><span class="line"><span class="comment"># e 也是中间变量，为了留住梯度也用了 retain_grad</span></span><br><span class="line">e.retain_grad()</span><br><span class="line">e.register_hook(<span class="keyword">lambda</span> grad: grad * <span class="number">2</span>)</span><br><span class="line">e.retain_grad()</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(e._backward_hooks)</span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">retain_grad 可以被调用多次，但在 OrderedDict 中只保存一个</span></span><br><span class="line"><span class="string">output:</span></span><br><span class="line"><span class="string">OrderedDict([(47,</span></span><br><span class="line"><span class="string">              &lt;function torch._tensor.Tensor.retain_grad.&lt;locals&gt;.retain_grad_hook(grad)&gt;),</span></span><br><span class="line"><span class="string">             (48, &lt;function __main__.&lt;lambda&gt;(grad)&gt;)])</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">e.backward()</span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">这句会产生输出，这个输出是 c 的两个 hook 里的 print 引起的</span></span><br><span class="line"><span class="string">output:</span></span><br><span class="line"><span class="string">tensor(8.)</span></span><br><span class="line"><span class="string">tensor(10.)</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(e.grad)</span><br><span class="line"><span class="built_in">print</span>(d.grad)</span><br><span class="line"><span class="built_in">print</span>(c.grad)</span><br><span class="line"><span class="built_in">print</span>(a.grad)</span><br><span class="line"><span class="built_in">print</span>(b.grad)</span><br><span class="line"></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">output:</span></span><br><span class="line"><span class="string">tensor(1.)</span></span><br><span class="line"><span class="string">tensor(112.)</span></span><br><span class="line"><span class="string">tensor(10.)</span></span><br><span class="line"><span class="string">tensor(30.)</span></span><br><span class="line"><span class="string">tensor(20.)</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+<p>注册的 hook 函数可以被 remove，这个 remove 过程如果在 backward 之前，那么不会对变量的梯度产生作用，如果发生在 backward 之后，那么还是会对变量的梯度产生作用。</p>
+<p>先来个 remove 发生在 backward 之前的：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"></span><br><span class="line">a = torch.tensor(<span class="number">2.0</span>, requires_grad=<span class="literal">True</span>)</span><br><span class="line">b = torch.tensor(<span class="number">3.0</span>, requires_grad=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">c = a * b</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">c_hook</span>(<span class="params">grad</span>):</span><br><span class="line">    <span class="built_in">print</span>(grad)</span><br><span class="line">    <span class="keyword">return</span> grad + <span class="number">2</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># c 在这里注册了两个 hook，将第一个 hook 赋值给一个变量做标记，用于后面 remove</span></span><br><span class="line">h = c.register_hook(c_hook)</span><br><span class="line">c.register_hook(<span class="keyword">lambda</span> grad: <span class="built_in">print</span>(grad))</span><br><span class="line">c.retain_grad()</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(c._backward_hooks)</span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">output:</span></span><br><span class="line"><span class="string">OrderedDict([(43, &lt;function __main__.c_hook(grad)&gt;),</span></span><br><span class="line"><span class="string">             (44, &lt;function __main__.&lt;lambda&gt;(grad)&gt;),</span></span><br><span class="line"><span class="string">             (45,</span></span><br><span class="line"><span class="string">              &lt;function torch._tensor.Tensor.retain_grad.&lt;locals&gt;.retain_grad_hook(grad)&gt;)])</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">d = torch.tensor(<span class="number">4.0</span>, requires_grad=<span class="literal">True</span>)</span><br><span class="line">d.register_hook(<span class="keyword">lambda</span> grad: grad + <span class="number">100</span>)</span><br><span class="line"></span><br><span class="line">e = c * d</span><br><span class="line"></span><br><span class="line">e.retain_grad()</span><br><span class="line">e.register_hook(<span class="keyword">lambda</span> grad: grad * <span class="number">2</span>)</span><br><span class="line">e.retain_grad()</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(e._backward_hooks)</span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">retain_grad 可以被调用多次，但在 OrderedDict 中只保存一个</span></span><br><span class="line"><span class="string">output:</span></span><br><span class="line"><span class="string">OrderedDict([(47,</span></span><br><span class="line"><span class="string">              &lt;function torch._tensor.Tensor.retain_grad.&lt;locals&gt;.retain_grad_hook(grad)&gt;),</span></span><br><span class="line"><span class="string">             (48, &lt;function __main__.&lt;lambda&gt;(grad)&gt;)])</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 在 backward 之前 remove c 的 hook</span></span><br><span class="line">h.remove()</span><br><span class="line"><span class="built_in">print</span>(c._backward_hooks)</span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">c 的第一个 hook 没了</span></span><br><span class="line"><span class="string">output:</span></span><br><span class="line"><span class="string">OrderedDict([(68, &lt;function __main__.&lt;lambda&gt;(grad)&gt;),</span></span><br><span class="line"><span class="string">             (69,</span></span><br><span class="line"><span class="string">              &lt;function torch._tensor.Tensor.retain_grad.&lt;locals&gt;.retain_grad_hook(grad)&gt;)])</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">e.backward()</span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">这时候只有一个输出了，注意这个 tensor(8.) </span></span><br><span class="line"><span class="string">是由 c.register_hook(lambda grad: print(grad)) 引起的，</span></span><br><span class="line"><span class="string">因为前一个 hook 被 remove 了，不存在 grad + 2 这个过程</span></span><br><span class="line"><span class="string">output:</span></span><br><span class="line"><span class="string">tensor(8.)</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(e.grad)</span><br><span class="line"><span class="built_in">print</span>(d.grad)</span><br><span class="line"><span class="built_in">print</span>(c.grad)</span><br><span class="line"><span class="built_in">print</span>(a.grad)</span><br><span class="line"><span class="built_in">print</span>(b.grad)</span><br><span class="line"></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">c 的梯度就是 8，同时 a 和 b 的梯度也会变化</span></span><br><span class="line"><span class="string">output:</span></span><br><span class="line"><span class="string">tensor(1.)</span></span><br><span class="line"><span class="string">tensor(112.)</span></span><br><span class="line"><span class="string">tensor(8.)</span></span><br><span class="line"><span class="string">tensor(24.)</span></span><br><span class="line"><span class="string">tensor(16.)</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+<p>再来个 remove 发生在 backward 之后的：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"></span><br><span class="line">a = torch.tensor(<span class="number">2.0</span>, requires_grad=<span class="literal">True</span>)</span><br><span class="line">b = torch.tensor(<span class="number">3.0</span>, requires_grad=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">c = a * b</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">c_hook</span>(<span class="params">grad</span>):</span><br><span class="line">    <span class="built_in">print</span>(grad)</span><br><span class="line">    <span class="keyword">return</span> grad + <span class="number">2</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># c 在这里注册了两个 hook，将第一个 hook 赋值给一个变量做标记，用于后面 remove</span></span><br><span class="line">h = c.register_hook(c_hook)</span><br><span class="line">c.register_hook(<span class="keyword">lambda</span> grad: <span class="built_in">print</span>(grad))</span><br><span class="line">c.retain_grad()</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(c._backward_hooks)</span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">output:</span></span><br><span class="line"><span class="string">OrderedDict([(43, &lt;function __main__.c_hook(grad)&gt;),</span></span><br><span class="line"><span class="string">             (44, &lt;function __main__.&lt;lambda&gt;(grad)&gt;),</span></span><br><span class="line"><span class="string">             (45,</span></span><br><span class="line"><span class="string">              &lt;function torch._tensor.Tensor.retain_grad.&lt;locals&gt;.retain_grad_hook(grad)&gt;)])</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">d = torch.tensor(<span class="number">4.0</span>, requires_grad=<span class="literal">True</span>)</span><br><span class="line">d.register_hook(<span class="keyword">lambda</span> grad: grad + <span class="number">100</span>)</span><br><span class="line"></span><br><span class="line">e = c * d</span><br><span class="line"></span><br><span class="line">e.retain_grad()</span><br><span class="line">e.register_hook(<span class="keyword">lambda</span> grad: grad * <span class="number">2</span>)</span><br><span class="line">e.retain_grad()</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(e._backward_hooks)</span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">retain_grad 可以被调用多次，但在 OrderedDict 中只保存一个</span></span><br><span class="line"><span class="string">output:</span></span><br><span class="line"><span class="string">OrderedDict([(47,</span></span><br><span class="line"><span class="string">              &lt;function torch._tensor.Tensor.retain_grad.&lt;locals&gt;.retain_grad_hook(grad)&gt;),</span></span><br><span class="line"><span class="string">             (48, &lt;function __main__.&lt;lambda&gt;(grad)&gt;)])</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">e.backward()</span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">到这里还没有发生 remove</span></span><br><span class="line"><span class="string">output:</span></span><br><span class="line"><span class="string">tensor(8.)</span></span><br><span class="line"><span class="string">tensor(10.)</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 在 backward 之后 remove c 的 hook，这时对于梯度变化已经没有影响了</span></span><br><span class="line">h.remove()</span><br><span class="line"><span class="built_in">print</span>(c._backward_hooks)</span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">c 的第一个 hook 没了</span></span><br><span class="line"><span class="string">output:</span></span><br><span class="line"><span class="string">OrderedDict([(74, &lt;function __main__.&lt;lambda&gt;(grad)&gt;),</span></span><br><span class="line"><span class="string">             (75,</span></span><br><span class="line"><span class="string">              &lt;function torch._tensor.Tensor.retain_grad.&lt;locals&gt;.retain_grad_hook(grad)&gt;)])</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(e.grad)</span><br><span class="line"><span class="built_in">print</span>(d.grad)</span><br><span class="line"><span class="built_in">print</span>(c.grad)</span><br><span class="line"><span class="built_in">print</span>(a.grad)</span><br><span class="line"><span class="built_in">print</span>(b.grad)</span><br><span class="line"></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">梯度不因 remove 操作发生变化</span></span><br><span class="line"><span class="string">output:</span></span><br><span class="line"><span class="string">tensor(1.)</span></span><br><span class="line"><span class="string">tensor(112.)</span></span><br><span class="line"><span class="string">tensor(10.)</span></span><br><span class="line"><span class="string">tensor(30.)</span></span><br><span class="line"><span class="string">tensor(20.)</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+<p>针对 <code>Tensor</code> 的 hook 的使用场景一般不多，最常用的 hook 是针对 <code>nn.Module</code> 的。</p>
+<h2 id="Hook-for-nn-Module"><span class="post-title-index">2. </span><a href="#Hook-for-nn-Module" class="headerlink" title="Hook for nn.Module"></a>Hook for <code>nn.Module</code></h2><p><strong>说明：</strong>这部分内容基本上来自 <a target="_blank" rel="noopener" href="https://cloud.tencent.com/developer/article/1475430#:~:text=%E6%A8%A1%E5%9D%97%E7%9A%84%E3%80%82-,Hook%20for%20Modules,-%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9D%97">半小时学会 PyTorch Hook</a>，其中加入了部分自己的分析。</p>
+<p>网络模块 <code>nn.module</code> 不像上一节中的 <code>Tensor</code>，拥有显式的变量名可以直接访问，而是被封装在神经网络中间。我们通常只能获得网络整体的输入和输出，对于夹在网络中间的模块，我们不但很难得知它输入/输出的梯度，甚至连它输入输出的数值都无法获得。除非设计网络时，在 <code>forward</code> 函数的返回值中包含中间 module 的输出，或者用很麻烦的办法，把网络按照 module 的名称拆分再组合，让中间层提取的 feature 暴露出来。</p>
+<p>为了解决这个麻烦，PyTorch 设计了两种 hook：<code>register_forward_hook</code> 和 <code>register_backward_hook</code>，分别用来获取正/反向传播时，中间层模块输入和输出的 feature/gradient，大大降低了获取模型内部信息流的难度。</p>
+<h3 id="register-forward-hook"><span class="post-title-index">2.1. </span><a href="#register-forward-hook" class="headerlink" title="register forward hook"></a>register forward hook</h3><p><code>register_forward_hook</code> 的作用是获取前向传播过程中，各个网络模块的输入和输出。对于模块 <code>module</code>，其使用方式为：<code>module.register_forward_hook(hook_fn)</code>。其中 <code>hook_fn</code> 的签名为：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hook_fn(module, <span class="built_in">input</span>, output) -&gt; <span class="literal">None</span></span><br></pre></td></tr></table></figure>
+<p>它的输入变量分别为：模块，模块的输入，模块的输出。<del>和对 <code>Tensor</code> 的 hook 不同，forward hook 不返回任何值，也就是说不能用来修改输入或者输出的值，但</del>借助这个 hook，我们可以方便地用预训练的神经网络提取特征，而不用改变预训练网络的结构。</p>
+<p><code>register_forward_hook</code> 的源码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">register_forward_hook</span>(<span class="params">self, hook</span>):</span><br><span class="line">        <span class="string">r&quot;&quot;&quot;Registers a forward hook on the module.</span></span><br><span class="line"><span class="string">        The hook will be called every time after :func:`forward` has computed an output.</span></span><br><span class="line"><span class="string">        It should have the following signature::</span></span><br><span class="line"><span class="string">            hook(module, input, output) -&gt; None or modified output</span></span><br><span class="line"><span class="string">        The hook can modify the output. It can modify the input inplace but</span></span><br><span class="line"><span class="string">        it will not have effect on forward since this is called after</span></span><br><span class="line"><span class="string">        :func:`forward` is called.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        Returns:</span></span><br><span class="line"><span class="string">            :class:`torch.utils.hooks.RemovableHandle`:</span></span><br><span class="line"><span class="string">                a handle that can be used to remove the added hook by calling</span></span><br><span class="line"><span class="string">                ``handle.remove()``</span></span><br><span class="line"><span class="string">        &quot;&quot;&quot;</span></span><br><span class="line">        handle = hooks.RemovableHandle(self._forward_hooks)</span><br><span class="line">        self._forward_hooks[handle.<span class="built_in">id</span>] = hook</span><br><span class="line">        <span class="keyword">return</span> handle</span><br></pre></td></tr></table></figure>
+<p>从这个源码注释中我们可以获得一些信息：</p>
+<ul>
+<li>hook 函数可以改变 <code>output</code> 的值，只要返回值不是 <code>None</code>，这个返回值就是修改后的 <code>output</code> 值。这个与 <code>Tensor</code> 中的 hook 是一样的</li>
+<li>可以 inplace 地改变 <code>input</code> 的值，但对 forward 过程不会有影响，因为 hook 是在 <code>forward</code> 函数之后被调用的</li>
+<li>因为 hook 是在 <code>forward</code> 函数之后被调用的，所以 <code>register_forward_hook()</code> 函数必须在 <code>forward()</code> 函数调用之前被使用，如果在 <code>forward()</code> 函数之后再执行 <code>register_forward_hook()</code> ，被 register 的 hook 函数已经不能对 forward 过程产生影响或者获取 forward 过程的中间值了。</li>
+</ul>
+<p>下面提供一段示例代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> torch <span class="keyword">import</span> nn</span><br><span class="line"></span><br><span class="line"><span class="comment"># 首先我们定义一个模型</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Model</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="built_in">super</span>(Model, self).__init__()</span><br><span class="line">        self.fc1 = nn.Linear(<span class="number">3</span>, <span class="number">4</span>)</span><br><span class="line">        self.relu1 = nn.ReLU()</span><br><span class="line">        self.fc2 = nn.Linear(<span class="number">4</span>, <span class="number">1</span>)</span><br><span class="line">        self.initialize()</span><br><span class="line">    </span><br><span class="line">    <span class="comment"># 为了方便验证，我们将指定特殊的weight和bias</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">initialize</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">with</span> torch.no_grad():</span><br><span class="line">            self.fc1.weight = torch.nn.Parameter(</span><br><span class="line">                torch.Tensor([[<span class="number">1.</span>, <span class="number">2.</span>, <span class="number">3.</span>],</span><br><span class="line">                              [-<span class="number">4.</span>, -<span class="number">5.</span>, -<span class="number">6.</span>],</span><br><span class="line">                              [<span class="number">7.</span>, <span class="number">8.</span>, <span class="number">9.</span>],</span><br><span class="line">                              [-<span class="number">10.</span>, -<span class="number">11.</span>, -<span class="number">12.</span>]]))</span><br><span class="line"></span><br><span class="line">            self.fc1.bias = torch.nn.Parameter(torch.Tensor([<span class="number">1.0</span>, <span class="number">2.0</span>, <span class="number">3.0</span>, <span class="number">4.0</span>]))</span><br><span class="line">            self.fc2.weight = torch.nn.Parameter(torch.Tensor([[<span class="number">1.0</span>, <span class="number">2.0</span>, <span class="number">3.0</span>, <span class="number">4.0</span>]]))</span><br><span class="line">            self.fc2.bias = torch.nn.Parameter(torch.Tensor([<span class="number">1.0</span>]))</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        o = self.fc1(x)</span><br><span class="line">        o = self.relu1(o)</span><br><span class="line">        o = self.fc2(o)</span><br><span class="line">        <span class="keyword">return</span> o</span><br><span class="line"></span><br><span class="line"><span class="comment"># 全局变量，用于存储中间层的 feature</span></span><br><span class="line">total_feat_out = []</span><br><span class="line">total_feat_in = []</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义 forward hook function</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">hook_fn_forward</span>(<span class="params">module, <span class="built_in">input</span>, output</span>):</span><br><span class="line">    <span class="built_in">print</span>(module) <span class="comment"># 用于区分模块</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;input: &#x27;</span>, <span class="built_in">input</span>) <span class="comment"># 首先打印出来</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;output: &#x27;</span>, output)</span><br><span class="line">    total_feat_out.append(output) <span class="comment"># 然后分别存入全局 list 中</span></span><br><span class="line">    total_feat_in.append(<span class="built_in">input</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">model = Model()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 在这里注册 hook，是在 forward() 函数之前，因为 forward() 是在 o = model(x) 这一步执行的</span></span><br><span class="line">modules = model.named_children() <span class="comment">#</span></span><br><span class="line"><span class="keyword">for</span> name, module <span class="keyword">in</span> modules:</span><br><span class="line">    module.register_forward_hook(hook_fn_forward)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 注意下面代码中 x 的维度，对于linear module，输入一定是大于等于二维的</span></span><br><span class="line"><span class="comment"># （第一维是 batch size）。在 forward hook 中看不出来，但是 backward hook 中，</span></span><br><span class="line"><span class="comment"># 得到的梯度完全不对。</span></span><br><span class="line"><span class="comment"># 有一篇 hook 的教程就是这里出了错，作者还强行解释，遗毒无穷，</span></span><br><span class="line"></span><br><span class="line">x = torch.Tensor([[<span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>]]).requires_grad_() </span><br><span class="line">o = model(x)</span><br><span class="line">o.backward()</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&#x27;==========Saved inputs and outputs==========&#x27;</span>)</span><br><span class="line"><span class="keyword">for</span> idx <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(total_feat_in)):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;input: &#x27;</span>, total_feat_in[idx])</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;output: &#x27;</span>, total_feat_out[idx])</span><br></pre></td></tr></table></figure>
+<p>输出如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">Linear(in_features=<span class="number">3</span>, out_features=<span class="number">4</span>, bias=<span class="literal">True</span>)</span><br><span class="line"><span class="built_in">input</span>:  (tensor([[<span class="number">1.</span>, <span class="number">1.</span>, <span class="number">1.</span>]], requires_grad=<span class="literal">True</span>),)</span><br><span class="line">output:  tensor([[  <span class="number">7.</span>, -<span class="number">13.</span>,  <span class="number">27.</span>, -<span class="number">29.</span>]], grad_fn=&lt;AddmmBackward&gt;)</span><br><span class="line">ReLU()</span><br><span class="line"><span class="built_in">input</span>:  (tensor([[  <span class="number">7.</span>, -<span class="number">13.</span>,  <span class="number">27.</span>, -<span class="number">29.</span>]], grad_fn=&lt;AddmmBackward&gt;),)</span><br><span class="line">output:  tensor([[ <span class="number">7.</span>,  <span class="number">0.</span>, <span class="number">27.</span>,  <span class="number">0.</span>]], grad_fn=&lt;ReluBackward0&gt;)</span><br><span class="line">Linear(in_features=<span class="number">4</span>, out_features=<span class="number">1</span>, bias=<span class="literal">True</span>)</span><br><span class="line"><span class="built_in">input</span>:  (tensor([[ <span class="number">7.</span>,  <span class="number">0.</span>, <span class="number">27.</span>,  <span class="number">0.</span>]], grad_fn=&lt;ReluBackward0&gt;),)</span><br><span class="line">output:  tensor([[<span class="number">89.</span>]], grad_fn=&lt;AddmmBackward&gt;)</span><br><span class="line">==========Saved inputs <span class="keyword">and</span> outputs==========</span><br><span class="line"><span class="built_in">input</span>:  (tensor([[<span class="number">1.</span>, <span class="number">1.</span>, <span class="number">1.</span>]], requires_grad=<span class="literal">True</span>),)</span><br><span class="line">output:  tensor([[  <span class="number">7.</span>, -<span class="number">13.</span>,  <span class="number">27.</span>, -<span class="number">29.</span>]], grad_fn=&lt;AddmmBackward&gt;)</span><br><span class="line"><span class="built_in">input</span>:  (tensor([[  <span class="number">7.</span>, -<span class="number">13.</span>,  <span class="number">27.</span>, -<span class="number">29.</span>]], grad_fn=&lt;AddmmBackward&gt;),)</span><br><span class="line">output:  tensor([[ <span class="number">7.</span>,  <span class="number">0.</span>, <span class="number">27.</span>,  <span class="number">0.</span>]], grad_fn=&lt;ReluBackward0&gt;)</span><br><span class="line"><span class="built_in">input</span>:  (tensor([[ <span class="number">7.</span>,  <span class="number">0.</span>, <span class="number">27.</span>,  <span class="number">0.</span>]], grad_fn=&lt;ReluBackward0&gt;),)</span><br><span class="line">output:  tensor([[<span class="number">89.</span>]], grad_fn=&lt;AddmmBackward&gt;)</span><br></pre></td></tr></table></figure>
+<h3 id="register-backward-hook"><span class="post-title-index">2.2. </span><a href="#register-backward-hook" class="headerlink" title="register backward hook"></a>register backward hook</h3><p>和 <code>register_forward_hook</code> 相似，<code>register_backward_hook</code> 的作用是获取神经网络反向传播过程中，各个模块输入端和输出端的梯度值。对于模块 <code>module</code>，其使用方式为：<code>module.register_backward_hook(hook_fn)</code>。其中 <code>hook_fn</code> 的函数签名为：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hook_fn(module, grad_input, grad_output) -&gt; Tensor <span class="keyword">or</span> <span class="literal">None</span></span><br></pre></td></tr></table></figure>
+<p>它的输入变量分别为：模块，模块输入端的梯度，模块输出端的梯度。需要注意的是，<strong>这里的输入端和输出端，是站在前向传播的角度的，而不是反向传播的角度。</strong>例如线性模块：<code>o = W * x + b</code>，其输入端为 <code>W</code>，<code>x</code> 和 <code>b</code>，输出端为 <code>o</code>。</p>
+<p>如果模块有多个输入或者输出的话，<code>grad_input</code> 和 <code>grad_output</code> 可以是 tuple 类型。对于线性模块：<code>o = W * x + b</code>，它的输入端包括了 <code>W</code>、<code>x</code> 和 <code>b</code> 三部分，因此 <code>grad_input</code> 就是一个包含三个元素的 tuple。</p>
+<p><strong>这里注意和 forward hook 的不同：</strong></p>
+<p>1.在 forward hook 中，input 是 <code>x</code>，而不包括 <code>W</code> 和 <code>b</code>。</p>
+<p>2.返回 <code>Tensor</code> 或者 <code>None</code>，backward hook 函数不能直接改变它的输入变量，但是可以返回新的 <code>grad_input</code>，反向传播到它上一个模块。</p>
+<p>举个例子：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> torch <span class="keyword">import</span> nn</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Model</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="built_in">super</span>(Model, self).__init__()</span><br><span class="line">        self.fc1 = nn.Linear(<span class="number">3</span>, <span class="number">4</span>)</span><br><span class="line">        self.relu1 = nn.ReLU()</span><br><span class="line">        self.fc2 = nn.Linear(<span class="number">4</span>, <span class="number">1</span>)</span><br><span class="line">        self.initialize()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">initialize</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">with</span> torch.no_grad():</span><br><span class="line">            self.fc1.weight = torch.nn.Parameter(</span><br><span class="line">                torch.Tensor([[<span class="number">1.</span>, <span class="number">2.</span>, <span class="number">3.</span>],</span><br><span class="line">                              [-<span class="number">4.</span>, -<span class="number">5.</span>, -<span class="number">6.</span>],</span><br><span class="line">                              [<span class="number">7.</span>, <span class="number">8.</span>, <span class="number">9.</span>],</span><br><span class="line">                              [-<span class="number">10.</span>, -<span class="number">11.</span>, -<span class="number">12.</span>]]))</span><br><span class="line"></span><br><span class="line">            self.fc1.bias = torch.nn.Parameter(torch.Tensor([<span class="number">1.0</span>, <span class="number">2.0</span>, <span class="number">3.0</span>, <span class="number">4.0</span>]))</span><br><span class="line">            self.fc2.weight = torch.nn.Parameter(torch.Tensor([[<span class="number">1.0</span>, <span class="number">2.0</span>, <span class="number">3.0</span>, <span class="number">4.0</span>]]))</span><br><span class="line">            self.fc2.bias = torch.nn.Parameter(torch.Tensor([<span class="number">1.0</span>]))</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        o = self.fc1(x)</span><br><span class="line">        o = self.relu1(o)</span><br><span class="line">        o = self.fc2(o)</span><br><span class="line">        <span class="keyword">return</span> o</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">total_grad_out = []</span><br><span class="line">total_grad_in = []</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">hook_fn_backward</span>(<span class="params">module, grad_input, grad_output</span>):</span><br><span class="line">    <span class="built_in">print</span>(module) <span class="comment"># 为了区分模块</span></span><br><span class="line">    <span class="comment"># 为了符合反向传播的顺序，我们先打印 grad_output</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;grad_output&#x27;</span>, grad_output) </span><br><span class="line">    <span class="comment"># 再打印 grad_input</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;grad_input&#x27;</span>, grad_input)</span><br><span class="line">    <span class="comment"># 保存到全局变量</span></span><br><span class="line">    total_grad_in.append(grad_input)</span><br><span class="line">    total_grad_out.append(grad_output)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">model = Model()</span><br><span class="line"></span><br><span class="line">modules = model.named_children()</span><br><span class="line"><span class="keyword">for</span> name, module <span class="keyword">in</span> modules:</span><br><span class="line">    module.register_backward_hook(hook_fn_backward)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 这里的 requires_grad 很重要，如果不加，backward hook</span></span><br><span class="line"><span class="comment"># 执行到第一层，对 x 的导数将为 None，某英文博客作者这里疏忽了</span></span><br><span class="line"><span class="comment"># 此外再强调一遍 x 的维度，一定不能写成 torch.Tensor([1.0, 1.0, 1.0]).requires_grad_()</span></span><br><span class="line"><span class="comment"># 否则 backward hook 会出问题。</span></span><br><span class="line">x = torch.Tensor([[<span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>]]).requires_grad_()</span><br><span class="line">o = model(x)</span><br><span class="line">o.backward()</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&#x27;==========Saved inputs and outputs==========&#x27;</span>)</span><br><span class="line"><span class="keyword">for</span> idx <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(total_grad_in)):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;grad output: &#x27;</span>, total_grad_out[idx])</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;grad input: &#x27;</span>, total_grad_in[idx])</span><br></pre></td></tr></table></figure>
+<p>输出如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">Linear(in_features=<span class="number">4</span>, out_features=<span class="number">1</span>, bias=<span class="literal">True</span>)</span><br><span class="line">grad_output (tensor([[<span class="number">1.</span>]]),)</span><br><span class="line">grad_input (tensor([<span class="number">1.</span>]), tensor([[<span class="number">1.</span>, <span class="number">2.</span>, <span class="number">3.</span>, <span class="number">4.</span>]]), tensor([[ <span class="number">7.</span>],</span><br><span class="line">        [ <span class="number">0.</span>],</span><br><span class="line">        [<span class="number">27.</span>],</span><br><span class="line">        [ <span class="number">0.</span>]]))</span><br><span class="line">ReLU()</span><br><span class="line">grad_output (tensor([[<span class="number">1.</span>, <span class="number">2.</span>, <span class="number">3.</span>, <span class="number">4.</span>]]),)</span><br><span class="line">grad_input (tensor([[<span class="number">1.</span>, <span class="number">0.</span>, <span class="number">3.</span>, <span class="number">0.</span>]]),)</span><br><span class="line">Linear(in_features=<span class="number">3</span>, out_features=<span class="number">4</span>, bias=<span class="literal">True</span>)</span><br><span class="line">grad_output (tensor([[<span class="number">1.</span>, <span class="number">0.</span>, <span class="number">3.</span>, <span class="number">0.</span>]]),)</span><br><span class="line">grad_input (tensor([<span class="number">1.</span>, <span class="number">0.</span>, <span class="number">3.</span>, <span class="number">0.</span>]), tensor([[<span class="number">22.</span>, <span class="number">26.</span>, <span class="number">30.</span>]]), tensor([[<span class="number">1.</span>, <span class="number">0.</span>, <span class="number">3.</span>, <span class="number">0.</span>],</span><br><span class="line">        [<span class="number">1.</span>, <span class="number">0.</span>, <span class="number">3.</span>, <span class="number">0.</span>],</span><br><span class="line">        [<span class="number">1.</span>, <span class="number">0.</span>, <span class="number">3.</span>, <span class="number">0.</span>]]))</span><br><span class="line">==========Saved inputs <span class="keyword">and</span> outputs==========</span><br><span class="line">grad output:  (tensor([[<span class="number">1.</span>]]),)</span><br><span class="line">grad <span class="built_in">input</span>:  (tensor([<span class="number">1.</span>]), tensor([[<span class="number">1.</span>, <span class="number">2.</span>, <span class="number">3.</span>, <span class="number">4.</span>]]), tensor([[ <span class="number">7.</span>],</span><br><span class="line">        [ <span class="number">0.</span>],</span><br><span class="line">        [<span class="number">27.</span>],</span><br><span class="line">        [ <span class="number">0.</span>]]))</span><br><span class="line">grad output:  (tensor([[<span class="number">1.</span>, <span class="number">2.</span>, <span class="number">3.</span>, <span class="number">4.</span>]]),)</span><br><span class="line">grad <span class="built_in">input</span>:  (tensor([[<span class="number">1.</span>, <span class="number">0.</span>, <span class="number">3.</span>, <span class="number">0.</span>]]),)</span><br><span class="line">grad output:  (tensor([[<span class="number">1.</span>, <span class="number">0.</span>, <span class="number">3.</span>, <span class="number">0.</span>]]),)</span><br><span class="line">grad <span class="built_in">input</span>:  (tensor([<span class="number">1.</span>, <span class="number">0.</span>, <span class="number">3.</span>, <span class="number">0.</span>]), tensor([[<span class="number">22.</span>, <span class="number">26.</span>, <span class="number">30.</span>]]), tensor([[<span class="number">1.</span>, <span class="number">0.</span>, <span class="number">3.</span>, <span class="number">0.</span>],</span><br><span class="line">        [<span class="number">1.</span>, <span class="number">0.</span>, <span class="number">3.</span>, <span class="number">0.</span>],</span><br><span class="line">        [<span class="number">1.</span>, <span class="number">0.</span>, <span class="number">3.</span>, <span class="number">0.</span>]]))</span><br></pre></td></tr></table></figure>
+<p>需要注意的是，对线性模块，其 <code>grad_input</code> 是一个三元组，排列顺序分别为：对偏置 <code>b</code> 的导数，对输入 <code>x</code> 的导数，对权重 <code>W</code> 的导数。</p>
+<p><strong>backward hook 在全连接层和卷积层表现不一致的地方：</strong></p>
+<ol>
+<li>形状：<ul>
+<li>在卷积层中，weight 的梯度和 weight 的形状相同</li>
+<li>在全连接层中，weight 的梯度的形状是 weight 形状的转秩</li>
+</ul>
+</li>
+<li><code>grad_input</code> tuple 中各梯度的顺序<ul>
+<li>在卷积层中，bias 的梯度位于tuple 的末尾：<code>grad_input</code> = (对 feature 的导数，对权重 <code>W</code> 的导数，对 bias 的导数)</li>
+<li>在全连接层中，bias 的梯度位于 tuple 的开头：<code>grad_input</code> = (对 bias 的导数，对 feature 的导数，对 <code>W</code> 的导数)</li>
+</ul>
+</li>
+<li>当 batch size &gt; 1时，对 bias 的梯度处理不同<ul>
+<li>在卷积层，对 bias 的梯度为整个 batch 的数据在 bias 上的梯度之和：<code>grad_input</code> = (对feature的导数，对权重 W 的导数，对 bias 的导数)</li>
+<li>在全连接层，对 bias 的梯度是分开的，bach 中每条数据，对应一个 bias 的梯度：<code>grad_input</code> = ((data1 对 bias 的导数，data2 对 bias 的导数 …)，对 feature 的导数，对 W 的导数)</li>
+</ul>
+</li>
+</ol>
+<h2 id="示例"><span class="post-title-index">3. </span><a href="#示例" class="headerlink" title="示例"></a>示例</h2><p>示例可以参见 <a target="_blank" rel="noopener" href="https://cloud.tencent.com/developer/article/1475430#:~:text=Guided%20Backpropagation-,%E9%80%9A%E8%BF%87%E4%B8%8A%E6%96%87%E7%9A%84%E4%BB%8B%E7%BB%8D,-%EF%BC%8C%E6%88%91%E4%BB%AC%E5%B7%B2%E7%BB%8F%E6%8E%8C%E6%8F%A1">Guided Backpropagation 示例</a></p>
+<h2 id="参考资料"><span class="post-title-index">4. </span><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>[1]. <a target="_blank" rel="noopener" href="https://cloud.tencent.com/developer/article/1475430">半小时学会 PyTorch Hook</a></p>
+<p>[2]. 一个不错的视频：<a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV1MV411t7td?from=search&amp;seid=3193580179636578175&amp;spm_id_from=333.337.0.0">bilibili</a>, <a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=syLFCVYua6Q">YouTube</a></p>
+<p>[3]. <a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/87853615">pytorch的hook机制之register_forward_hook</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Pytorch-Hook/" rel="tag"># Pytorch Hook</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/11/10/grad-cam/" rel="prev" title="Grad-CAM 的 PyTorch 应用">
+      <i class="fa fa-chevron-left"></i> Grad-CAM 的 PyTorch 应用
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/11/10/paper-decoupled/" rel="next" title="论文阅读：Decoupled Weight Decay Regularization">
+      论文阅读：Decoupled Weight Decay Regularization <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Hook-For-Tensor"><span class="nav-text">1. Hook For Tensor</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Hook-for-nn-Module"><span class="nav-text">2. Hook for nn.Module</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#register-forward-hook"><span class="nav-text">2.1. register forward hook</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#register-backward-hook"><span class="nav-text">2.2. register backward hook</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B"><span class="nav-text">3. 示例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-text">4. 参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="TimeOverflow"
+      src="/uploads/avatar.jpg">
+  <p class="site-author-name" itemprop="name">TimeOverflow</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">16</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/TimeOverflow" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;TimeOverflow" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:zhangz1220@outlook.com" title="E-Mail → mailto:zhangz1220@outlook.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">TimeOverflow</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">102k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">1:33</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'N3GrQmFE8RVjH8Sk6s4B7xnY-9Nh9j0Va',
+      appKey     : '4KwTSki3hoVvxnEwsxogPOKb',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : true,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

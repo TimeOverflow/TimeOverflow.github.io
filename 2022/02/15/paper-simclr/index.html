@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.1">
+<meta name="google-site-verification" content="nRdQ64asSdtMIPKmtAL6qJO9Ka3rBCML55licirmHbo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/panda-apple.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/panda-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/panda-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"timeoverflow.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="本文为通常所说的 SimCLR 论文标题：A Simple Framework for Contrastive Learning of Visual Representations 作者：Ting Chen, Simon Kornblith, Mohammad Norouzi, Geoffrey Hinton 发表于  ICML 2020 地址：arXiv 参考代码：GitHub，这是第三方代码（">
+<meta property="og:type" content="article">
+<meta property="og:title" content="论文阅读：A Simple Framework for Contrastive Learning of Visual Representations">
+<meta property="og:url" content="https://timeoverflow.github.io/2022/02/15/paper-simclr/index.html">
+<meta property="og:site_name" content="时间溢出的地方">
+<meta property="og:description" content="本文为通常所说的 SimCLR 论文标题：A Simple Framework for Contrastive Learning of Visual Representations 作者：Ting Chen, Simon Kornblith, Mohammad Norouzi, Geoffrey Hinton 发表于  ICML 2020 地址：arXiv 参考代码：GitHub，这是第三方代码（">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/202201302354962.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/202202082326811.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/simclr_augs.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/simclr_aug_ablation.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/simclr_model_size.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/simclr_proj_head.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/simclr_batch_size.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/simclr_linear_eval.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/simclr_semi.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/simlclr_transfer.png">
+<meta property="article:published_time" content="2022-02-15T01:18:12.000Z">
+<meta property="article:modified_time" content="2022-02-15T01:20:26.467Z">
+<meta property="article:author" content="TimeOverflow">
+<meta property="article:tag" content="自监督学习">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/202201302354962.png">
+
+<link rel="canonical" href="https://timeoverflow.github.io/2022/02/15/paper-simclr/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>论文阅读：A Simple Framework for Contrastive Learning of Visual Representations | 时间溢出的地方</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">时间溢出的地方</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/TimeOverflow" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://timeoverflow.github.io/2022/02/15/paper-simclr/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/uploads/avatar.jpg">
+      <meta itemprop="name" content="TimeOverflow">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="时间溢出的地方">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          论文阅读：A Simple Framework for Contrastive Learning of Visual Representations
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2022-02-15 09:18:12 / 修改时间：09:20:26" itemprop="dateCreated datePublished" datetime="2022-02-15T09:18:12+08:00">2022-02-15</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">论文阅读</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2022/02/15/paper-simclr/" class="post-meta-item leancloud_visitors" data-flag-title="论文阅读：A Simple Framework for Contrastive Learning of Visual Representations" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2022/02/15/paper-simclr/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2022/02/15/paper-simclr/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>6.6k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>6 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>本文为通常所说的 SimCLR</p>
+<p>论文标题：A Simple Framework for Contrastive Learning of Visual Representations</p>
+<p>作者：Ting Chen, Simon Kornblith, Mohammad Norouzi, Geoffrey Hinton</p>
+<p>发表于  ICML 2020</p>
+<p>地址：<a target="_blank" rel="noopener" href="https://arxiv.org/abs/2002.05709">arXiv</a></p>
+<p>参考代码：<a target="_blank" rel="noopener" href="https://github.com/sthalles/SimCLR">GitHub</a>，这是第三方代码（PyTorch），不是作者提供的 TensorFlow 代码</p>
+<span id="more"></span>
+<h2 id="核心思想"><span class="post-title-index">1. </span><a href="#核心思想" class="headerlink" title="核心思想"></a>核心思想</h2><p>本文在摘要和 Introduction 中提到，本文的主要贡献为：</p>
+<ol>
+<li>对于无监督学习来说，组合使用数据增强很重要，即需要强有力的数据增强（指在产生 multi-view pair 的时候）</li>
+<li>获得特征表示后再加一个非线性变化（就是全连接层）之后再计算对比损失，可以提高特征表示的能力</li>
+<li>相比于有监督学习，使用更大的 batch size 和更深、更宽的网络对无监督对比学习的特征表示能力提高更大</li>
+</ol>
+<h2 id="总体框架"><span class="post-title-index">2. </span><a href="#总体框架" class="headerlink" title="总体框架"></a>总体框架</h2><p>如下图所示：</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/202201302354962.png" style="zoom: 50%;"></p>
+<p>首先将图片做随机变换作为 multi-view  的 positive pair，本文使用了 3 中随机变换：</p>
+<ul>
+<li>random cropping followed by resize back to the original size </li>
+<li>random color distortions</li>
+<li>random Gaussian blur  </li>
+</ul>
+<p>图片经过一个 encoder 提取特征 $\boldsymbol{h}_i$ 和 $\boldsymbol{h}_j$，编码器即图中的 $f(\cdot)$，本文使用的是 ResNet</p>
+<p>特征表示后再加一个小的 projection head $g(\cdot)$，用于将特征映射为 $\boldsymbol{z}_i$，本文使用简单的 MLP 作为 head：</p>
+<script type="math/tex; mode=display">
+\boldsymbol{z}_i = g(\boldsymbol{h}_i) = W^{(2)}\sigma (W^{(1)}\boldsymbol{h}_i)</script><p>对比损失使用的也是 InfoNCE，具体来说，对于一个 batch，有 $N$ 个样本，经过变化得到 $2N$ 个数据。对于每个 positive pair，其余的 $2(N-1)$ 个数据都作为负样本。两个样本之间的相似度用余弦相似度计算：$\operatorname{sim}(\boldsymbol{u}, \boldsymbol{v})=\boldsymbol{u}^{\top} \boldsymbol{v} /|\boldsymbol{u}||\boldsymbol{v}|$. 对于一个正样本对 $(i, j)$，对比损失会希望 $j$ 和 $i$ 的相似度最大，而与其他数据的相似度比较小，损失函数定义为：</p>
+<script type="math/tex; mode=display">
+\ell_{i, j}=-\log \frac{\exp \left(\operatorname{sim}\left(\boldsymbol{z}_{i}, \boldsymbol{z}_{j}\right) / \tau\right)}{\sum_{k=1}^{2 N} \mathbb{1}_{[k \neq i]} \exp \left(\operatorname{sim}\left(\boldsymbol{z}_{i}, \boldsymbol{z}_{k}\right) / \tau\right)}</script><p>这里的 $\mathbb{1}_{[k \neq i]}$ 是指示函数（indicator function），显然分母中不包含 $i$ 自己与自己的相似度，所以 数据 $i$ 是要在除自己以外的 $2(N-1)$ 个数据中分辨出 $j$ 来。$\tau$ 是温度系数，用于做 scaling。这个在很多文章中的 InfoNCE loss 中都用到过，通过视频 <a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV1bD4y1S7nZ?share_source=copy_web">B站-未来亦可期-CV</a> 中的解释，我理解了这个的用处。这个损失其实是类似于 Softmax 函数的，但是分子和分母中的每一项不是网络直接输出的概率值，而是余弦相似度，余弦相似度范围为 $[-1,1]$，经过 exponential 后，其值相差并不大，$e^1=2.718$, $e^{-1} = 0.367$，差距并不大。考虑最极端的情况，假设 $i$ 与 $j$ 的相似度为 1（这已经是最大了），而与其他样本 $k \neq j$ 且 $k \neq i$ 的相似度为 -1，batch size 为 256 的话，分子会远远小于分母，使得 $i$ 和 $j$ 的相似度无法凸显出来。但加了温度系数就不一样了，这个 $\tau$ 一般是比较小的值，比如 MoCo 中取值是 0.07，这样就能把 positive pair 和 negative pair 的相似度经过指数后拉开差距（毕竟指数增长是很迅猛的）。另外文中提到，这个损失对所有 pair 都是计算的，即 $(i, j)$ 和 $(j, i)$ 都要分别计算损失。</p>
+<p>下面是文中给出的算法代码：</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/202202082326811.png" alt="SimCLR 算法" style="zoom:50%;"></p>
+<p>上面这个算法中，是将奇数序号的样本和偶数序号的样本分别作为一个 image 的两个不同的 view，这样对于一张图像，它的两个 augmentation 之后的 view 是相邻的。随后计算一个相似度矩阵，batch size 为 $N$ 的情况下，共有 $2N$ 个样本，相似度矩阵为 $2N \times 2N$ 的，即样本之间两两计算相似度，包括自己与自己。但在计算损失的，自己与自己的相似度是不用的。上面算法中的损失计算相当于按行求 Softmax，当然前提是去除自己与自己的那个相似度，而 label 就是与自己来自同一图像的样本的序号。对每一行都这样操作，这样就会有 $\ell(2k-1,2k) + \ell(2k, 2k-1)$ 了。</p>
+<p>我找到一个 <a target="_blank" rel="noopener" href="https://github.com/sthalles/SimCLR/blob/master/simclr.py">PyTorch 版本的 SimCLR 实现</a>，下面是关于损失计算的代码，主要看一下实现技巧，代码中的中文注释都是我添加的注释：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">info_nce_loss</span>(<span class="params">self, features</span>):</span><br><span class="line">    <span class="comment"># 先记 batch_size = N, n_views = 2</span></span><br><span class="line">    <span class="comment"># 这个 labels 的实现，将第一个 view 的样本统一放在 0~N-1 中，第二个 view 的样本统一放在 N~2N-1 中</span></span><br><span class="line">    <span class="comment"># 使得第 k(0 &lt;= k &lt;= N-1) 和第 (k+N) 个样本是正样本对</span></span><br><span class="line">    labels = torch.cat([torch.arange(self.args.batch_size) <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(self.args.n_views)], dim=<span class="number">0</span>) <span class="comment"># shape = (2N,)</span></span><br><span class="line">    <span class="comment"># 对于每一行 i，将与之来自同一个 view 的样本标为 1，包括自身，这样对角线都是 1</span></span><br><span class="line">    <span class="comment"># 例如第 0 行中，第 0 列和 第 N 列是 1，第 2 行中，第 2 列和 第 (N+2) 列是 1</span></span><br><span class="line">    <span class="comment"># 第 N 行中，第 N 列和第 0 列是 1</span></span><br><span class="line">    labels = (labels.unsqueeze(<span class="number">0</span>) == labels.unsqueeze(<span class="number">1</span>)).<span class="built_in">float</span>() <span class="comment"># shape = (2N, 2N)</span></span><br><span class="line">    labels = labels.to(self.args.device)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 计算余弦相似度可以理解为先归一化，再计算点积</span></span><br><span class="line">    features = F.normalize(features, dim=<span class="number">1</span>) <span class="comment"># shape = (2N, C)</span></span><br><span class="line"></span><br><span class="line">    similarity_matrix = torch.matmul(features, features.T) <span class="comment"># shape = (2N, 2N)</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># discard the main diagonal from both: labels and similarities matrix</span></span><br><span class="line">    mask = torch.eye(labels.shape[<span class="number">0</span>], dtype=torch.<span class="built_in">bool</span>).to(self.args.device)<span class="comment"># shape = (2N, 2N)</span></span><br><span class="line">    <span class="comment"># 这一步把 labels 的对角线全部去掉，即不考虑样本自己与自己了，只考虑其他</span></span><br><span class="line">    labels = labels[~mask].view(labels.shape[<span class="number">0</span>], -<span class="number">1</span>) <span class="comment"># shape = (2N, 2N-1)</span></span><br><span class="line">    <span class="comment"># 相似度矩阵的对角线也被抽掉了，这样还是能保持与 labels 的对应关系 shape = (2N, 2N-1)</span></span><br><span class="line">    similarity_matrix = similarity_matrix[~mask].view(similarity_matrix.shape[<span class="number">0</span>], -<span class="number">1</span>)</span><br><span class="line">    <span class="comment"># assert similarity_matrix.shape == labels.shape</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># select and combine multiple positives</span></span><br><span class="line">    <span class="comment"># 把每个样本与其对应的正样本相似度提取出来，shape = (2N, 1)</span></span><br><span class="line">    positives = similarity_matrix[labels.<span class="built_in">bool</span>()].view(labels.shape[<span class="number">0</span>], -<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># select only the negatives the negatives</span></span><br><span class="line">    <span class="comment"># 其余的都是负样本，shape = (2N, 2N-2)</span></span><br><span class="line">    negatives = similarity_matrix[~labels.<span class="built_in">bool</span>()].view(similarity_matrix.shape[<span class="number">0</span>], -<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 现在 logits 中每行的第一个元素都是正样本对的相似度</span></span><br><span class="line">    logits = torch.cat([positives, negatives], dim=<span class="number">1</span>) <span class="comment"># shape = (2N, 2N-1)</span></span><br><span class="line">    <span class="comment"># labels 全为 0，即对每个样本，当作 softmax 时都是第一个元素为其类别，这里借鉴了 MoCo 的技巧</span></span><br><span class="line">    labels = torch.zeros(logits.shape[<span class="number">0</span>], dtype=torch.long).to(self.args.device)</span><br><span class="line"></span><br><span class="line">    logits = logits / self.args.temperature</span><br><span class="line">    <span class="keyword">return</span> logits, labels</span><br></pre></td></tr></table></figure>
+<p>这里的代码返回 <code>logits</code> 和 <code>labels</code>，并未直接计算 loss，在训练代码中再计算 loss：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">features = self.model(images)</span><br><span class="line">logits, labels = self.info_nce_loss(features)</span><br><span class="line">loss = self.criterion(logits, labels)</span><br></pre></td></tr></table></figure>
+<p>其中 <code>self.criterion = torch.nn.CrossEntropyLoss().to(self.args.device)</code>，就是交叉熵损失函数。</p>
+<p>本文选择的 batch size 从 256~8192，这样可以提供足够多的负样本（8192 时负样本数量为 $16382=8192\times2-2$）,作者说 batch size 很大的时候，SGD/Momentum with linear learning rate scaling 优化器不太行，因此使用了 LARS 优化器<sup><a href="#fn_You et al.,2017 " id="reffn_You et al.,2017 ">You et al.,2017 </a></sup>。</p>
+<blockquote id="fn_You et al.,2017 ">
+<sup>You et al.,2017 </sup>. You, Y., Gitman, I., and Ginsburg, B. Large batch training of convolutional networks. arXiv preprint arXiv:1708.03888, 2017.<a href="#reffn_You et al.,2017 " title="Jump back to footnote [You et al.,2017 ] in the text."> &#8617;</a>
+</blockquote>
+<p>关于 Glibal BN：作者说多卡训练的时候，所有的正样本都在一张卡上，这样会造成信息泄露使得模型学习到一些捷径（模型坍缩）。作者使用的方法是将所有卡上 BN 层计算的 mean 和 variance 加在一块，然后每块卡上的数据都用这个均值来计算。这不同于 MoCo 中用的 shuffle BN。</p>
+<p>文中使用的数据集为 ImageNet，部分实验也在 CIFAR-10 上做了。本文只做了分类实验，使用的规则为 linear probe。</p>
+<p>一些默认设置：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>设置项</th>
+<th>设置内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>augmentation</td>
+<td>random crop and resize (with random flip), color distortions, Gussian blur</td>
+</tr>
+<tr>
+<td>encoder</td>
+<td>ResNet-50 （特征表示维度为 2048）</td>
+</tr>
+<tr>
+<td>优化器</td>
+<td>LARS, weight decay = $10^{-6}$</td>
+</tr>
+<tr>
+<td>学习率</td>
+<td>4.8 (=0.3 × Batchsize / 256)</td>
+</tr>
+<tr>
+<td>batch size / epochs</td>
+<td>4096 / 100</td>
+</tr>
+<tr>
+<td>训练策略</td>
+<td>linear warmup for the first 10 epochs, cosine decay schedule without restarts</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="数据增强很重要"><span class="post-title-index">3. </span><a href="#数据增强很重要" class="headerlink" title="数据增强很重要"></a>数据增强很重要</h2><p>这里说的数据增强指的是产生 mulit-view 的时候使用的数据增强方法。另外说一句，这种通过数据增强获得不同 view 用来做对比的无监督学习方式适合于 object-centric 的图片，即一张图片只有一个占据主导地位的物体，这样可以保证不同的增强之后得到的 view 仍然是具有高度相关性的。对于自然场景中的多目标图像，这种方法不一定适合，可以参见 NeurIPS 2021 论文 <a target="_blank" rel="noopener" href="https://arxiv.org/abs/2106.11952">Unsupervised Object-Level Representation Learning from Scene Images</a> 及 <a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV1mL411L7K4">相应的讲解视频</a>。</p>
+<p>下图展示了文中使用的一些数据增强手段：</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/simclr_augs.png" style="zoom:80%;"></p>
+<p>注意图中也说了，这里虽然展示了这么多增强手段，但文中训练时只用了  random crop (with flip and resize), color distortion, and Gaussian blur。</p>
+<p>为了评估不同的数据增强方式的效果，文中做了 ablation study。因为 ImageNet 中的图片都要做 crop and resize，为了能够验证某种数据增强方法（可能是一种增强方法，也可能是组合）的作用，首先对于所有图片，都先做 crop and resize，这样得到的图片再成为两个不同的 view：这里用了不对称的方式，其中一个 view 不做任何变换，另一个 view 使用一种变换方式，这样可以单方面地验证某种数据增强方法的作用（当然这种情况下训练效果会下降）。</p>
+<p>文中比较了使用不同的（单个）数据增强方法在 ImageNet 上预训练后做 linear evaluation 的 top-1 accuracy，如下图所示：</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/simclr_aug_ablation.png" alt></p>
+<p>可以看出，只使用一个数据增强（而不是两种组合）时，效果都不太行（这可以从对角线看出来）。</p>
+<p>random cropping + random color distortion 的数据增强组合方式效果最突出。文中猜测，只使用 random crop 时效果不好，可能是因为同一张图片 crop 出来的不同 patch 的颜色分布基本一致，而不同的图片其分布则有所不同，这样模型可能会学到这样的捷径，而没有真的提取到有用的特征。</p>
+<p>另外，作者通过实验认为，相比于有监督学习，数据增强对无监督学习的性能提升更大。</p>
+<h2 id="结构设计"><span class="post-title-index">4. </span><a href="#结构设计" class="headerlink" title="结构设计"></a>结构设计</h2><h3 id="Unsupervised-contrastive-learning-benefits-more-from-bigger-models"><span class="post-title-index">4.1. </span><a href="#Unsupervised-contrastive-learning-benefits-more-from-bigger-models" class="headerlink" title="Unsupervised contrastive learning benefits (more) from bigger models"></a>Unsupervised contrastive learning benefits (more) from bigger models</h3><p>作者首先做了实验表明，无监督学习更受益于大模型，对于有监督学习来说，模型容量越大带来的增益不如无监督学习：</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/simclr_model_size.png" style="zoom:80%;"></p>
+<h3 id="A-nonlinear-projection-head-improves-the-representation-quality-of-the-layer-before-it"><span class="post-title-index">4.2. </span><a href="#A-nonlinear-projection-head-improves-the-representation-quality-of-the-layer-before-it" class="headerlink" title="A nonlinear projection head improves the representation quality of the layer before it"></a>A nonlinear projection head improves the representation quality of the layer before it</h3><p>下图表明使用非线性 projection head 的效果好于使用线性 projection head 好于不使用 projection head：</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/simclr_proj_head.png" style="zoom:80%;"></p>
+<p>作者猜想加 projection head 再计算损失函数之所以有效，是因为 projection head 可以去除对于下游任务有用的信息，如物体的颜色或角度，这样，projection head 之前的那个特征表示就可以包含更多的信息（用于做特征表示迁移到下游任务）。</p>
+<p>注意本文使用的 projection head 只是 $W^{(2)}\sigma (W^{(1)}\boldsymbol{h}_i)$，其中没有使用 BN 层。</p>
+<h2 id="batch-size-的作用"><span class="post-title-index">5. </span><a href="#batch-size-的作用" class="headerlink" title="batch size 的作用"></a>batch size 的作用</h2><p>如下图所示：</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/simclr_batch_size.png" style="zoom:80%;"></p>
+<p>在 epoch 较少时，大的 batch size 起的作用很显著，当 epoch 比较多时，不同的 batch size 之间的差异性就不是特别明显了。</p>
+<h2 id="实验结果对比"><span class="post-title-index">6. </span><a href="#实验结果对比" class="headerlink" title="实验结果对比"></a>实验结果对比</h2><p>本文使用了 ResNet-50 的 3 种不同宽度的模型（1×, 2 ×, 4×），训练了 1000 个 epoch。</p>
+<p>本文只做了分类实验，没有检测、分割等下游任务。</p>
+<h3 id="Linear-evaluation"><span class="post-title-index">6.1. </span><a href="#Linear-evaluation" class="headerlink" title="Linear evaluation"></a>Linear evaluation</h3><p>结果如下：</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/simclr_linear_eval.png" style="zoom:80%;"></p>
+<h3 id="Semi-supervised-learning"><span class="post-title-index">6.2. </span><a href="#Semi-supervised-learning" class="headerlink" title="Semi-supervised learning"></a>Semi-supervised learning</h3><p>半监督学习指使用 ImageNet 中 1%（每类 ~12.8 张图片） 和 10%（（每类 ~128 张图片）） 的数据对网络进行 fine tune，下面是结果对比：</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/simclr_semi.png" style="zoom:80%;"></p>
+<h3 id="Transfer-learning"><span class="post-title-index">6.3. </span><a href="#Transfer-learning" class="headerlink" title="Transfer learning"></a>Transfer learning</h3><p>迁移到其他数据集上分类。使用的模型为 ResNet-50 4×，对每个数据集都调整了超参数的选择。</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/simlclr_transfer.png" style="zoom:80%;"></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%87%AA%E7%9B%91%E7%9D%A3%E5%AD%A6%E4%B9%A0/" rel="tag"># 自监督学习</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/01/17/imagenet/" rel="prev" title="ImageNet-1k 下载与组织">
+      <i class="fa fa-chevron-left"></i> ImageNet-1k 下载与组织
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/02/17/paper-mocov2/" rel="next" title="论文阅读：Improved Baselines with Momentum Contrastive Learning">
+      论文阅读：Improved Baselines with Momentum Contrastive Learning <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3"><span class="nav-text">1. 核心思想</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E4%BD%93%E6%A1%86%E6%9E%B6"><span class="nav-text">2. 总体框架</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%A2%9E%E5%BC%BA%E5%BE%88%E9%87%8D%E8%A6%81"><span class="nav-text">3. 数据增强很重要</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E6%9E%84%E8%AE%BE%E8%AE%A1"><span class="nav-text">4. 结构设计</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Unsupervised-contrastive-learning-benefits-more-from-bigger-models"><span class="nav-text">4.1. Unsupervised contrastive learning benefits (more) from bigger models</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#A-nonlinear-projection-head-improves-the-representation-quality-of-the-layer-before-it"><span class="nav-text">4.2. A nonlinear projection head improves the representation quality of the layer before it</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#batch-size-%E7%9A%84%E4%BD%9C%E7%94%A8"><span class="nav-text">5. batch size 的作用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%BB%93%E6%9E%9C%E5%AF%B9%E6%AF%94"><span class="nav-text">6. 实验结果对比</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Linear-evaluation"><span class="nav-text">6.1. Linear evaluation</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Semi-supervised-learning"><span class="nav-text">6.2. Semi-supervised learning</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Transfer-learning"><span class="nav-text">6.3. Transfer learning</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="TimeOverflow"
+      src="/uploads/avatar.jpg">
+  <p class="site-author-name" itemprop="name">TimeOverflow</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">16</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/TimeOverflow" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;TimeOverflow" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:zhangz1220@outlook.com" title="E-Mail → mailto:zhangz1220@outlook.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">TimeOverflow</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">102k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">1:33</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'N3GrQmFE8RVjH8Sk6s4B7xnY-9Nh9j0Va',
+      appKey     : '4KwTSki3hoVvxnEwsxogPOKb',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : true,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.1">
+<meta name="google-site-verification" content="nRdQ64asSdtMIPKmtAL6qJO9Ka3rBCML55licirmHbo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/panda-apple.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/panda-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/panda-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"timeoverflow.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="优化器的通用用法首先引入包： 1from torch import optim 使用例子： 12optimizer &#x3D; optim.SGD(model.parameters(), lr&#x3D;0.01, momentum&#x3D;0.9)optimizer &#x3D; optim.Adam([var1, var2], lr&#x3D;0.0001) 优化器类初始化的第一个参数需要是一个 iterable，比如 model.par">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PyTorch 中的优化器和学习率调整机制">
+<meta property="og:url" content="https://timeoverflow.github.io/2021/11/10/optimizer-scheduler/index.html">
+<meta property="og:site_name" content="时间溢出的地方">
+<meta property="og:description" content="优化器的通用用法首先引入包： 1from torch import optim 使用例子： 12optimizer &#x3D; optim.SGD(model.parameters(), lr&#x3D;0.01, momentum&#x3D;0.9)optimizer &#x3D; optim.Adam([var1, var2], lr&#x3D;0.0001) 优化器类初始化的第一个参数需要是一个 iterable，比如 model.par">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/pytorch_sgd_algo.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/pytorch_adam_algo.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/pytorch_adamw_algo.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/pytorch_cosine_annealing2.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/cosine_annealing_lr_100.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/pytorch_cosine_annealing_wr.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/cosine_annealing_wr_1_lr.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/cosine_annealing_wr_2_lr.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/cosine_annealing_wr_step1_lr.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/cosine_annealing_wr_step2_lr.png">
+<meta property="article:published_time" content="2021-11-10T14:57:16.000Z">
+<meta property="article:modified_time" content="2021-11-10T14:58:47.674Z">
+<meta property="article:author" content="TimeOverflow">
+<meta property="article:tag" content="优化器">
+<meta property="article:tag" content="PyTorch">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/pytorch_sgd_algo.png">
+
+<link rel="canonical" href="https://timeoverflow.github.io/2021/11/10/optimizer-scheduler/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>PyTorch 中的优化器和学习率调整机制 | 时间溢出的地方</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">时间溢出的地方</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/TimeOverflow" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://timeoverflow.github.io/2021/11/10/optimizer-scheduler/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/uploads/avatar.jpg">
+      <meta itemprop="name" content="TimeOverflow">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="时间溢出的地方">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          PyTorch 中的优化器和学习率调整机制
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-11-10 22:57:16 / 修改时间：22:58:47" itemprop="dateCreated datePublished" datetime="2021-11-10T22:57:16+08:00">2021-11-10</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/PyTorch/" itemprop="url" rel="index"><span itemprop="name">PyTorch</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2021/11/10/optimizer-scheduler/" class="post-meta-item leancloud_visitors" data-flag-title="PyTorch 中的优化器和学习率调整机制" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2021/11/10/optimizer-scheduler/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2021/11/10/optimizer-scheduler/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>23k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>21 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="优化器的通用用法"><span class="post-title-index">1. </span><a href="#优化器的通用用法" class="headerlink" title="优化器的通用用法"></a>优化器的通用用法</h2><p>首先引入包：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> torch <span class="keyword">import</span> optim</span><br></pre></td></tr></table></figure>
+<p>使用例子：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">optimizer = optim.SGD(model.parameters(), lr=<span class="number">0.01</span>, momentum=<span class="number">0.9</span>)</span><br><span class="line">optimizer = optim.Adam([var1, var2], lr=<span class="number">0.0001</span>)</span><br></pre></td></tr></table></figure>
+<p>优化器类初始化的第一个参数需要是一个 <code>iterable</code>，比如 <code>model.parameters()</code>。列表也是 <code>iterable</code>，比如 <code>[var1, var2]</code>。这个 <code>iterable</code> 里的元素应当是 <code>Variabel</code>（也可以是 <code>dict</code>）。</p>
+<p>官方文档里提到一句话：</p>
+<blockquote>
+<p>If you need to move a model to GPU via <code>.cuda()</code>, please do so before constructing optimizers for it. Parameters of a model after <code>.cuda()</code> will be different objects with those before the call.</p>
+</blockquote>
+<p>也就是说，将模型加载到 GPU 之后再定义优化器（如果这个优化器更新的是这个模型的参数的话）。</p>
+<span id="more"></span>
+<h3 id="模型的不同部分使用不同的优化器超参数"><span class="post-title-index">1.1. </span><a href="#模型的不同部分使用不同的优化器超参数" class="headerlink" title="模型的不同部分使用不同的优化器超参数"></a>模型的不同部分使用不同的优化器超参数</h3><p>实现这样的功能，传入优化器初始化的第一个参数就要是一个元素为 <code>dict</code> 的 <code>iterable</code>，并且 <code>dict</code> 应该有一个 <code>key</code> 是 <code>&quot;params&quot;</code>, 其 <code>item</code> 是相应的模块的 parameters。其他的 <code>key</code> 应该是这个优化器初始化的参数名（如 <code>lr</code>, <code>weight_decay</code> 等）。举个例子：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">optim.SGD([</span><br><span class="line">                &#123;<span class="string">&#x27;params&#x27;</span>: model.base.parameters()&#125;,</span><br><span class="line">                &#123;<span class="string">&#x27;params&#x27;</span>: model.classifier.parameters(), <span class="string">&#x27;lr&#x27;</span>: <span class="number">1e-3</span>&#125;</span><br><span class="line">            ], lr=<span class="number">1e-2</span>, momentum=<span class="number">0.9</span>)</span><br></pre></td></tr></table></figure>
+<p>其中，<code>model.base</code> 部分的学习率为 <code>1e-2</code>，<code>model.classifier</code> 部分的学习率为 <code>1e-3</code>，二者的 <code>momentum</code> 都是 0.9。</p>
+<h3 id="冻结模型部分层的参数"><span class="post-title-index">1.2. </span><a href="#冻结模型部分层的参数" class="headerlink" title="冻结模型部分层的参数"></a>冻结模型部分层的参数</h3><p>首先把需要冻结的层的参数设置为不需要求导：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> para <span class="keyword">in</span> net.frozen_layer.parameters():</span><br><span class="line">	para.requires_grad = <span class="literal">False</span></span><br></pre></td></tr></table></figure>
+<p>然后在设置优化器的时候做一下参数筛选：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">optimizer = optim.SGD(<span class="built_in">filter</span>(<span class="keyword">lambda</span> p: p.requires_grad, model.parameters()), lr=<span class="number">0.01</span>, momentum=<span class="number">0.9</span>)</span><br></pre></td></tr></table></figure>
+<h3 id="训练时使用优化器的步骤"><span class="post-title-index">1.3. </span><a href="#训练时使用优化器的步骤" class="headerlink" title="训练时使用优化器的步骤"></a>训练时使用优化器的步骤</h3><p>这样做：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> <span class="built_in">input</span>, target <span class="keyword">in</span> dataset:</span><br><span class="line">    optimizer.zero_grad()</span><br><span class="line">    output = model(<span class="built_in">input</span>)</span><br><span class="line">    loss = loss_fn(output, target)</span><br><span class="line">    loss.backward()</span><br><span class="line">    optimizer.step()</span><br></pre></td></tr></table></figure>
+<h2 id="基类优化器-Optimizer"><span class="post-title-index">2. </span><a href="#基类优化器-Optimizer" class="headerlink" title="基类优化器 Optimizer"></a>基类优化器 Optimizer</h2><p>PyTorch 中的优化器都继承自基类 <a target="_blank" rel="noopener" href="https://github.com/pytorch/pytorch/blob/master/torch/optim/optimizer.py">class optim.Optimizer</a>，<code>Optimizer</code> 类的 <code>__init__</code> 方法定义为：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># __init__ method of optim.Optimizer</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, params, defaults</span>):</span><br><span class="line">    torch._C._log_api_usage_once(<span class="string">&quot;python.optimizer&quot;</span>)</span><br><span class="line">    self.defaults = defaults</span><br><span class="line"></span><br><span class="line">    self._hook_for_profile()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">isinstance</span>(params, torch.Tensor):</span><br><span class="line">        <span class="keyword">raise</span> TypeError(<span class="string">&quot;params argument given to the optimizer should be &quot;</span></span><br><span class="line">                        <span class="string">&quot;an iterable of Tensors or dicts, but got &quot;</span> +</span><br><span class="line">                        torch.typename(params))</span><br><span class="line"></span><br><span class="line">    self.state = defaultdict(<span class="built_in">dict</span>)</span><br><span class="line">    self.param_groups = []</span><br><span class="line"></span><br><span class="line">    param_groups = <span class="built_in">list</span>(params)</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">len</span>(param_groups) == <span class="number">0</span>:</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">&quot;optimizer got an empty parameter list&quot;</span>)</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> <span class="built_in">isinstance</span>(param_groups[<span class="number">0</span>], <span class="built_in">dict</span>):</span><br><span class="line">        param_groups = [&#123;<span class="string">&#x27;params&#x27;</span>: param_groups&#125;]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> param_group <span class="keyword">in</span> param_groups:</span><br><span class="line">        self.add_param_group(param_group)</span><br></pre></td></tr></table></figure>
+<p>它的两个参数，其中的 <code>params</code> 就是前面说的需要传递进来的 <code>iterable</code>，<code>defaluts</code> 是一个字典，包含了优化器的默认参数（<code>lr</code>, <code>weight_decay</code> 等）。</p>
+<p>文档里的说法是：</p>
+<blockquote>
+<p><code>params</code>: an <code>iterable</code> of <code>torch.Tensor</code> s or <code>dict</code> s. Specifies what Tensors should be optimized.</p>
+<p><code>defaults</code>: a dict containing default values of optimization options (used when a parameter group doesn’t specify them).</p>
+</blockquote>
+<p>这个 <code>defaults</code> 在 <code>Optimizer</code> 类中并没有默认定义，但在它的子类中，即具体的优化器里，会给它一个定义，并传递给 <code>Optimizer</code> 类。举个例子，下面是 SGD 优化器类的 <code>__init__</code> 函数（<a target="_blank" rel="noopener" href="https://github.com/pytorch/pytorch/blob/master/torch/optim/sgd.py">optim.SGD</a>），可以看到其中定义了一个 <code>defaults</code> 变量，将该函数的默认参数打包成一个字典，并传递给了父类的 <code>__init__</code> 函数。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># __init__ method of optim.SGD</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, params, lr=required, momentum=<span class="number">0</span>, dampening=<span class="number">0</span>,</span></span><br><span class="line"><span class="params">                 weight_decay=<span class="number">0</span>, nesterov=<span class="literal">False</span></span>):</span><br><span class="line">        <span class="keyword">if</span> lr <span class="keyword">is</span> <span class="keyword">not</span> required <span class="keyword">and</span> lr &lt; <span class="number">0.0</span>:</span><br><span class="line">            <span class="keyword">raise</span> ValueError(<span class="string">&quot;Invalid learning rate: &#123;&#125;&quot;</span>.<span class="built_in">format</span>(lr))</span><br><span class="line">        <span class="keyword">if</span> momentum &lt; <span class="number">0.0</span>:</span><br><span class="line">            <span class="keyword">raise</span> ValueError(<span class="string">&quot;Invalid momentum value: &#123;&#125;&quot;</span>.<span class="built_in">format</span>(momentum))</span><br><span class="line">        <span class="keyword">if</span> weight_decay &lt; <span class="number">0.0</span>:</span><br><span class="line">            <span class="keyword">raise</span> ValueError(<span class="string">&quot;Invalid weight_decay value: &#123;&#125;&quot;</span>.<span class="built_in">format</span>(weight_decay))</span><br><span class="line"></span><br><span class="line">        defaults = <span class="built_in">dict</span>(lr=lr, momentum=momentum, dampening=dampening,</span><br><span class="line">                        weight_decay=weight_decay, nesterov=nesterov)</span><br><span class="line">        <span class="keyword">if</span> nesterov <span class="keyword">and</span> (momentum &lt;= <span class="number">0</span> <span class="keyword">or</span> dampening != <span class="number">0</span>):</span><br><span class="line">            <span class="keyword">raise</span> ValueError(<span class="string">&quot;Nesterov momentum requires a momentum and zero dampening&quot;</span>)</span><br><span class="line">        <span class="built_in">super</span>(SGD, self).__init__(params, defaults)</span><br></pre></td></tr></table></figure>
+<p>再回来看 <code>Optimizer</code> 类的 <code>__init__</code> 函数，其中的第 14 行定义了 <code>self.param_groups = []</code>，将会存储该优化器将要优化的参数。</p>
+<p>第 16 行 <code>param_groups = list(params)</code> 将参数 <code>params</code> 变成列表，前面提到，<code>params</code> 作为一个 <code>iterable</code>，有三种形式：</p>
+<ol>
+<li><code>model.parameters()</code>: 这里的 <code>model</code> 是 <code>nn.Module</code> 对象，它的方法 <code>parameters()</code> 返回一个 <code>generator</code> 对象，这当然是一个 <code>iterator</code>，把 <code>model.parameters()</code> 列表化，得到一个列表，其中的元素是 <code>torch.nn.parameter.Parameter</code> 对象，也就是模型层的权重了。</li>
+<li><code>[var1, var2]</code>: 这本来就是个列表，用 <code>list()</code> 方法后还是原来的列表。其中的 <code>var1</code>, <code>var2</code> 也是 <code>torch.nn.parameter.Parameter</code> 对象。</li>
+<li><code>[&#123;&#39;params&#39;: model.base.parameters()&#125;, &#123;&#39;params&#39;: model.classifier.parameters(), &#39;lr&#39;: 1e-3&#125;]</code>: 这是一个列表，其中的元素是字典类型。列表用 <code>list()</code> 方法还是原来的列表。</li>
+</ol>
+<p>这样第 16 行之后 <code>param_groups</code> 作为一个列表，其内部元素的类型有两种：(a) <code>torch.nn.parameter.Parameter</code> 对象；(b) 字典对象，字典里至少有一个 <code>key</code>  为 <code>params</code> 的 item，可能还有其他 <code>key</code>（<code>lr</code>, <code>weight_decay</code> 等）。</p>
+<p>第 19 和 20 行做的事情，是让 <code>param_groups</code> 的元素类型必须为字典，如果你不是字典，我就帮你变成字典。如果<code>param_groups</code> 的元素类型为 <code>torch.nn.parameter.Parameter</code> 对象，那么就把 <code>param_groups</code> 这个列表本身作为 key 为 <code>params</code> 的 item 的 value，包装成一个字典，再赋值给 <code>param_groups</code>。    </p>
+<p>第 22 和 23 行函数 <code>add_param_group</code> 的主要作用是将 <code>param_groups</code> 的东西放进 <code>self.param_groups</code> 中，注意 <code>param_groups</code> 和 <code>self.param_groups</code> 是两个变量。<code>add_param_group</code> 的代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># add_param_group method of optim.Optimizer</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">add_param_group</span>(<span class="params">self, param_group</span>):</span><br><span class="line">    <span class="string">r&quot;&quot;&quot;Add a param group to the :class:`Optimizer` s `param_groups`.</span></span><br><span class="line"><span class="string">    This can be useful when fine tuning a pre-trained network as frozen layers can be made</span></span><br><span class="line"><span class="string">    trainable and added to the :class:`Optimizer` as training progresses.</span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        param_group (dict): Specifies what Tensors should be optimized along with group</span></span><br><span class="line"><span class="string">        specific optimization options.</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">assert</span> <span class="built_in">isinstance</span>(param_group, <span class="built_in">dict</span>), <span class="string">&quot;param group must be a dict&quot;</span></span><br><span class="line"></span><br><span class="line">    params = param_group[<span class="string">&#x27;params&#x27;</span>]</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">isinstance</span>(params, torch.Tensor):</span><br><span class="line">        param_group[<span class="string">&#x27;params&#x27;</span>] = [params]</span><br><span class="line">    <span class="keyword">elif</span> <span class="built_in">isinstance</span>(params, <span class="built_in">set</span>):</span><br><span class="line">        <span class="keyword">raise</span> TypeError(<span class="string">&#x27;optimizer parameters need to be organized in ordered collections, but &#x27;</span></span><br><span class="line">                        <span class="string">&#x27;the ordering of tensors in sets will change between runs. Please use a list instead.&#x27;</span>)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        param_group[<span class="string">&#x27;params&#x27;</span>] = <span class="built_in">list</span>(params)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> param <span class="keyword">in</span> param_group[<span class="string">&#x27;params&#x27;</span>]:</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> <span class="built_in">isinstance</span>(param, torch.Tensor):</span><br><span class="line">            <span class="keyword">raise</span> TypeError(<span class="string">&quot;optimizer can only optimize Tensors, &quot;</span></span><br><span class="line">                            <span class="string">&quot;but one of the params is &quot;</span> + torch.typename(param))</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> param.is_leaf:</span><br><span class="line">            <span class="keyword">raise</span> ValueError(<span class="string">&quot;can&#x27;t optimize a non-leaf Tensor&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> name, default <span class="keyword">in</span> self.defaults.items():</span><br><span class="line">        <span class="keyword">if</span> default <span class="keyword">is</span> required <span class="keyword">and</span> name <span class="keyword">not</span> <span class="keyword">in</span> param_group:</span><br><span class="line">            <span class="keyword">raise</span> ValueError(<span class="string">&quot;parameter group didn&#x27;t specify a value of required optimization parameter &quot;</span> +</span><br><span class="line">                             name)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            param_group.setdefault(name, default)</span><br><span class="line"></span><br><span class="line">    params = param_group[<span class="string">&#x27;params&#x27;</span>]</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">len</span>(params) != <span class="built_in">len</span>(<span class="built_in">set</span>(params)):</span><br><span class="line">        warnings.warn(<span class="string">&quot;optimizer contains a parameter group with duplicate parameters; &quot;</span></span><br><span class="line">                      <span class="string">&quot;in future, this will cause an error; &quot;</span></span><br><span class="line">                      <span class="string">&quot;see github.com/pytorch/pytorch/issues/40967 for more information&quot;</span>, stacklevel=<span class="number">3</span>)</span><br><span class="line"></span><br><span class="line">    param_set = <span class="built_in">set</span>()</span><br><span class="line">    <span class="keyword">for</span> group <span class="keyword">in</span> self.param_groups:</span><br><span class="line">        param_set.update(<span class="built_in">set</span>(group[<span class="string">&#x27;params&#x27;</span>]))</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> param_set.isdisjoint(<span class="built_in">set</span>(param_group[<span class="string">&#x27;params&#x27;</span>])):</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">&quot;some parameters appear in more than one parameter group&quot;</span>)</span><br><span class="line"></span><br><span class="line">    self.param_groups.append(param_group)</span><br></pre></td></tr></table></figure>
+<p>第 12 行 <code>params = param_group[&#39;params&#39;]</code>，从前面的分析知道，<code>param_group[&#39;params&#39;]</code> 要么是一个列表，要么是一个 <code>iterable</code> 对象（比如 <code>model.base.parameters()</code>），13 - 19 行做的事情，就是不管 <code>param_group[&#39;params&#39;]</code> 是什么，都要成为一个列表，并且列表的元素是 <code>torch.nn.Parameter</code> 对象，其实也就是 <code>Tensor</code>。</p>
+<p>第 21 - 26 行对 <code>param_group[&#39;params&#39;]</code> 里的元素做检查。如果不是叶子 <code>Tensor</code>，就报错。（PyTorch 不保存非叶子节点的 <code>Tensor</code> 的梯度）。</p>
+<p>第 28 - 33 行补充 <code>param_group</code> 里的其他键值对，比如 <code>lr</code>, <code>weight_decay</code> 等，如果这些值已经有了，那就不添加，如果没有，就用 <code>self.defaults</code> 里的值。这一点是为了实现不同层使用不同参数的功能。</p>
+<p>之后对<code>self.param_groups</code>和<code>param_group</code>中的元素进行判断，确保没有重复的参数。最后将字典<code>**param_group**</code>放进列表<code>**self.param_groups**</code>中</p>
+<p><code>Optimizer</code> 的 <code>zero_grad</code> 函数是将所有参数的梯度置为零，代码如下。其中 <code>detach_()</code>的作用是”Detaches the Tensor from the graph that created it, making it a leaf.”</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># zero_grad method of optim.Optimizer</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">zero_grad</span>(<span class="params">self, set_to_none: <span class="built_in">bool</span> = <span class="literal">False</span></span>):</span><br><span class="line">    <span class="string">r&quot;&quot;&quot;Sets the gradients of all optimized :class:`torch.Tensor` s to zero.</span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        set_to_none (bool): instead of setting to zero, set the grads to None.</span></span><br><span class="line"><span class="string">            This will in general have lower memory footprint, and can modestly improve performance.</span></span><br><span class="line"><span class="string">            However, it changes certain behaviors. For example:</span></span><br><span class="line"><span class="string">            1. When the user tries to access a gradient and perform manual ops on it,</span></span><br><span class="line"><span class="string">            a None attribute or a Tensor full of 0s will behave differently.</span></span><br><span class="line"><span class="string">            2. If the user requests ``zero_grad(set_to_none=True)`` followed by a backward pass, ``.grad``\ s</span></span><br><span class="line"><span class="string">            are guaranteed to be None for params that did not receive a gradient.</span></span><br><span class="line"><span class="string">            3. ``torch.optim`` optimizers have a different behavior if the gradient is 0 or None</span></span><br><span class="line"><span class="string">            (in one case it does the step with a gradient of 0 and in the other it skips</span></span><br><span class="line"><span class="string">            the step altogether).</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> <span class="built_in">hasattr</span>(self, <span class="string">&quot;_zero_grad_profile_name&quot;</span>):</span><br><span class="line">        self._hook_for_profile()</span><br><span class="line">    <span class="keyword">with</span> torch.autograd.profiler.record_function(self._zero_grad_profile_name):</span><br><span class="line">        <span class="keyword">for</span> group <span class="keyword">in</span> self.param_groups:</span><br><span class="line">            <span class="keyword">for</span> p <span class="keyword">in</span> group[<span class="string">&#x27;params&#x27;</span>]:</span><br><span class="line">                <span class="keyword">if</span> p.grad <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">                    <span class="keyword">if</span> set_to_none:</span><br><span class="line">                        p.grad = <span class="literal">None</span></span><br><span class="line">                    <span class="keyword">else</span>:</span><br><span class="line">                        <span class="keyword">if</span> p.grad.grad_fn <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">                            p.grad.detach_()</span><br><span class="line">                        <span class="keyword">else</span>:</span><br><span class="line">                            p.grad.requires_grad_(<span class="literal">False</span>)</span><br><span class="line">                        p.grad.zero_()</span><br></pre></td></tr></table></figure>
+<p><code>Optimizer</code> 更新参数主要是靠 <code>step</code> 函数，在父类 <code>Optimizer</code> 的 <code>step</code> 函数中只有一行代码 <code>raise NotImplementedError</code> ,这意味着每个子类都必须实现自己的 <code>step</code> 函数，这个原因很显然，因为不同的优化器更新参数的方式是不同的。后面将会对几个不同的优化器的 <code>step</code> 函数做一下分析。</p>
+<p>另外还有两个比较常用的函数：<code>state_dict()</code> 和 <code>load_staet_dict()</code>。</p>
+<p><code>state_dict()</code> 函数返回一个字典，大致如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># state_dict method of optim.Optimizer</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">state_dict</span>(<span class="params">self</span>):</span><br><span class="line">    <span class="string">r&quot;&quot;&quot;Returns the state of the optimizer as a :class:`dict`.</span></span><br><span class="line"><span class="string">    It contains two entries:</span></span><br><span class="line"><span class="string">    * state - a dict holding current optimization state. Its content</span></span><br><span class="line"><span class="string">        differs between optimizer classes.</span></span><br><span class="line"><span class="string">    * param_groups - a list containing all parameter groups where each</span></span><br><span class="line"><span class="string">        parameter group is a dict</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># codes here</span></span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="string">&#x27;state&#x27;</span>: packed_state,</span><br><span class="line">        <span class="string">&#x27;param_groups&#x27;</span>: param_groups,</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>保存模型的时候经常也会保存优化器，这时就需要用到 <code>state_dict()</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch.save(optimizer.state_dict(), <span class="string">&quot;optimizer.pt&quot;</span>)</span><br></pre></td></tr></table></figure>
+<p><code>load_state_dict()</code> 函数加载保存的优化器状态：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">optimizer_state_dict = torch.load(<span class="string">&quot;optimizer.pt&quot;</span>)</span><br><span class="line">optimizer.load_state_dict(optimizer)</span><br></pre></td></tr></table></figure>
+<h2 id="一些常用的优化器"><span class="post-title-index">3. </span><a href="#一些常用的优化器" class="headerlink" title="一些常用的优化器"></a>一些常用的优化器</h2><h3 id="SGD-优化器"><span class="post-title-index">3.1. </span><a href="#SGD-优化器" class="headerlink" title="SGD 优化器"></a>SGD 优化器</h3><p>类签名：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">torch.optim.SGD(params, </span><br><span class="line">                lr=&lt;required parameter&gt;, </span><br><span class="line">                momentum=<span class="number">0</span>, </span><br><span class="line">                dampening=<span class="number">0</span>, </span><br><span class="line">                weight_decay=<span class="number">0</span>, </span><br><span class="line">                nesterov=<span class="literal">False</span>)</span><br></pre></td></tr></table></figure>
+<p>参数含义：</p>
+<ul>
+<li><strong>params</strong> (<em>iterable</em>) – iterable of parameters to optimize or dicts defining parameter groups</li>
+<li><strong>lr</strong> (<a target="_blank" rel="noopener" href="https://docs.python.org/3/library/functions.html#float"><em>float</em></a>) – learning rate</li>
+<li><strong>momentum</strong> (<a target="_blank" rel="noopener" href="https://docs.python.org/3/library/functions.html#float"><em>float</em></a><em>,</em> <em>optional</em>) – momentum factor (default: 0)</li>
+<li><strong>weight_decay</strong> (<a target="_blank" rel="noopener" href="https://docs.python.org/3/library/functions.html#float"><em>float</em></a><em>,</em> <em>optional</em>) – weight decay (L2 penalty) (default: 0)</li>
+<li><strong>dampening</strong> (<a target="_blank" rel="noopener" href="https://docs.python.org/3/library/functions.html#float"><em>float</em></a><em>,</em> <em>optional</em>) – dampening for momentum (default: 0)</li>
+<li><strong>nesterov</strong> (<a target="_blank" rel="noopener" href="https://docs.python.org/3/library/functions.html#bool"><em>bool</em></a><em>,</em> <em>optional</em>) – enables Nesterov momentum (default: False)</li>
+</ul>
+<p>计算流程可以参考：</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/pytorch_sgd_algo.png" alt></p>
+<p><a target="_blank" rel="noopener" href="https://github.com/pytorch/pytorch/blob/master/torch/optim/sgd.py">optim.SGD</a> 的代码里主要定义的就是 <code>step()</code> 函数，其主要步骤的实现函数 <a target="_blank" rel="noopener" href="https://github.com/pytorch/pytorch/blob/cd51d2a3ecc8ac579bee910f6bafe41a4c41ca80/torch/optim/_functional.py#L156">F.sgd</a> 代码为：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">sgd</span>(<span class="params">params: <span class="type">List</span>[Tensor],</span></span><br><span class="line"><span class="params">        d_p_list: <span class="type">List</span>[Tensor],</span></span><br><span class="line"><span class="params">        momentum_buffer_list: <span class="type">List</span>[<span class="type">Optional</span>[Tensor]],</span></span><br><span class="line"><span class="params">        *,</span></span><br><span class="line"><span class="params">        weight_decay: <span class="built_in">float</span>,</span></span><br><span class="line"><span class="params">        momentum: <span class="built_in">float</span>,</span></span><br><span class="line"><span class="params">        lr: <span class="built_in">float</span>,</span></span><br><span class="line"><span class="params">        dampening: <span class="built_in">float</span>,</span></span><br><span class="line"><span class="params">        nesterov: <span class="built_in">bool</span></span>):</span><br><span class="line">    <span class="string">r&quot;&quot;&quot;Functional API that performs SGD algorithm computation.</span></span><br><span class="line"><span class="string">    See :class:`~torch.optim.SGD` for details.</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i, param <span class="keyword">in</span> <span class="built_in">enumerate</span>(params):</span><br><span class="line"></span><br><span class="line">        d_p = d_p_list[i]</span><br><span class="line">        <span class="keyword">if</span> weight_decay != <span class="number">0</span>:</span><br><span class="line">            d_p = d_p.add(param, alpha=weight_decay)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> momentum != <span class="number">0</span>:</span><br><span class="line">            buf = momentum_buffer_list[i]</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> buf <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">                buf = torch.clone(d_p).detach()</span><br><span class="line">                momentum_buffer_list[i] = buf</span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                buf.mul_(momentum).add_(d_p, alpha=<span class="number">1</span> - dampening)</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> nesterov:</span><br><span class="line">                d_p = d_p.add(buf, alpha=momentum)</span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                d_p = buf</span><br><span class="line"></span><br><span class="line">        param.add_(d_p, alpha=-lr)</span><br></pre></td></tr></table></figure>
+<h3 id="Adam-优化器"><span class="post-title-index">3.2. </span><a href="#Adam-优化器" class="headerlink" title="Adam 优化器"></a>Adam 优化器</h3><p>类签名：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">torch.optim.Adam(params, </span><br><span class="line">                 lr=<span class="number">0.001</span>, </span><br><span class="line">                 betas=(<span class="number">0.9</span>, <span class="number">0.999</span>), </span><br><span class="line">                 eps=<span class="number">1e-08</span>, </span><br><span class="line">                 weight_decay=<span class="number">0</span>, </span><br><span class="line">                 amsgrad=<span class="literal">False</span>)</span><br></pre></td></tr></table></figure>
+<p>参数含义：</p>
+<ul>
+<li><strong>params</strong> (<em>iterable</em>) – iterable of parameters to optimize or dicts defining parameter groups</li>
+<li><strong>lr</strong> (<a target="_blank" rel="noopener" href="https://docs.python.org/3/library/functions.html#float"><em>float</em></a><em>,</em> <em>optional</em>) – learning rate (default: 1e-3)</li>
+<li><strong>betas</strong> (<em>Tuple**[</em><a target="_blank" rel="noopener" href="https://docs.python.org/3/library/functions.html#float"><em>float</em></a><em>,</em> <a target="_blank" rel="noopener" href="https://docs.python.org/3/library/functions.html#float"><em>float</em></a><em>]**,</em> <em>optional</em>) – coefficients used for computing running averages of gradient and its square (default: (0.9, 0.999))</li>
+<li><strong>eps</strong> (<a target="_blank" rel="noopener" href="https://docs.python.org/3/library/functions.html#float"><em>float</em></a><em>,</em> <em>optional</em>) – term added to the denominator to improve numerical stability (default: 1e-8)</li>
+<li><strong>weight_decay</strong> (<a target="_blank" rel="noopener" href="https://docs.python.org/3/library/functions.html#float"><em>float</em></a><em>,</em> <em>optional</em>) – weight decay (L2 penalty) (default: 0)</li>
+<li><strong>amsgrad</strong> (<em>boolean**,</em> <em>optional</em>) – whether to use the AMSGrad variant of this algorithm from the paper <a target="_blank" rel="noopener" href="https://openreview.net/forum?id=ryQu7f-RZ">On the Convergence of Adam and Beyond</a> (default: False)</li>
+</ul>
+<p>计算流程为：</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/pytorch_adam_algo.png" alt></p>
+<p>从这个计算流程可以看出，PyTorch 实现里的 Adam 优化器是用 L2 正则化来代替 weight decay 的。</p>
+<p><a target="_blank" rel="noopener" href="https://github.com/pytorch/pytorch/blob/master/torch/optim/adam.py">optim.Adam</a> 里具体的函数 <a target="_blank" rel="noopener" href="https://github.com/pytorch/pytorch/blob/cd51d2a3ecc8ac579bee910f6bafe41a4c41ca80/torch/optim/_functional.py#L64">F.adam</a> 为：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">adam</span>(<span class="params">params: <span class="type">List</span>[Tensor],</span></span><br><span class="line"><span class="params">         grads: <span class="type">List</span>[Tensor],</span></span><br><span class="line"><span class="params">         exp_avgs: <span class="type">List</span>[Tensor],</span></span><br><span class="line"><span class="params">         exp_avg_sqs: <span class="type">List</span>[Tensor],</span></span><br><span class="line"><span class="params">         max_exp_avg_sqs: <span class="type">List</span>[Tensor],</span></span><br><span class="line"><span class="params">         state_steps: <span class="type">List</span>[<span class="built_in">int</span>],</span></span><br><span class="line"><span class="params">         *,</span></span><br><span class="line"><span class="params">         amsgrad: <span class="built_in">bool</span>,</span></span><br><span class="line"><span class="params">         beta1: <span class="built_in">float</span>,</span></span><br><span class="line"><span class="params">         beta2: <span class="built_in">float</span>,</span></span><br><span class="line"><span class="params">         lr: <span class="built_in">float</span>,</span></span><br><span class="line"><span class="params">         weight_decay: <span class="built_in">float</span>,</span></span><br><span class="line"><span class="params">         eps: <span class="built_in">float</span></span>):</span><br><span class="line">    <span class="string">r&quot;&quot;&quot;Functional API that performs Adam algorithm computation.</span></span><br><span class="line"><span class="string">    See :class:`~torch.optim.Adam` for details.</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i, param <span class="keyword">in</span> <span class="built_in">enumerate</span>(params):</span><br><span class="line"></span><br><span class="line">        grad = grads[i]</span><br><span class="line">        exp_avg = exp_avgs[i]</span><br><span class="line">        exp_avg_sq = exp_avg_sqs[i]</span><br><span class="line">        step = state_steps[i]</span><br><span class="line"></span><br><span class="line">        bias_correction1 = <span class="number">1</span> - beta1 ** step</span><br><span class="line">        bias_correction2 = <span class="number">1</span> - beta2 ** step</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> weight_decay != <span class="number">0</span>:</span><br><span class="line">            grad = grad.add(param, alpha=weight_decay)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># Decay the first and second moment running average coefficient</span></span><br><span class="line">        exp_avg.mul_(beta1).add_(grad, alpha=<span class="number">1</span> - beta1)</span><br><span class="line">        exp_avg_sq.mul_(beta2).addcmul_(grad, grad.conj(), value=<span class="number">1</span> - beta2)</span><br><span class="line">        <span class="keyword">if</span> amsgrad:</span><br><span class="line">            <span class="comment"># Maintains the maximum of all 2nd moment running avg. till now</span></span><br><span class="line">            torch.maximum(max_exp_avg_sqs[i], exp_avg_sq, out=max_exp_avg_sqs[i])</span><br><span class="line">            <span class="comment"># Use the max. for normalizing running avg. of gradient</span></span><br><span class="line">            denom = (max_exp_avg_sqs[i].sqrt() / math.sqrt(bias_correction2)).add_(eps)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            denom = (exp_avg_sq.sqrt() / math.sqrt(bias_correction2)).add_(eps)</span><br><span class="line"></span><br><span class="line">        step_size = lr / bias_correction1</span><br><span class="line"></span><br><span class="line">        param.addcdiv_(exp_avg, denom, value=-step_size)</span><br></pre></td></tr></table></figure>
+<p>其中的 <code>step</code> 变量应该相当于公式里的 <code>t</code>。</p>
+<h3 id="AdamW-优化器"><span class="post-title-index">3.3. </span><a href="#AdamW-优化器" class="headerlink" title="AdamW 优化器"></a>AdamW 优化器</h3><p>类签名：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">torch.optim.AdamW(params, </span><br><span class="line">                  lr=<span class="number">0.001</span>, </span><br><span class="line">                  betas=(<span class="number">0.9</span>, <span class="number">0.999</span>), </span><br><span class="line">                  eps=<span class="number">1e-08</span>, </span><br><span class="line">                  weight_decay=<span class="number">0.01</span>, </span><br><span class="line">                  amsgrad=<span class="literal">False</span>)</span><br></pre></td></tr></table></figure>
+<p>参数含义：</p>
+<ul>
+<li><strong>params</strong> (<em>iterable</em>) – iterable of parameters to optimize or dicts defining parameter groups</li>
+<li><strong>lr</strong> (<a target="_blank" rel="noopener" href="https://docs.python.org/3/library/functions.html#float"><em>float</em></a><em>,</em> <em>optional</em>) – learning rate (default: 1e-3)</li>
+<li><strong>betas</strong> (<em>Tuple**[</em><a target="_blank" rel="noopener" href="https://docs.python.org/3/library/functions.html#float"><em>float</em></a><em>,</em> <a target="_blank" rel="noopener" href="https://docs.python.org/3/library/functions.html#float"><em>float</em></a><em>]**,</em> <em>optional</em>) – coefficients used for computing running averages of gradient and its square (default: (0.9, 0.999))</li>
+<li><strong>eps</strong> (<a target="_blank" rel="noopener" href="https://docs.python.org/3/library/functions.html#float"><em>float</em></a><em>,</em> <em>optional</em>) – term added to the denominator to improve numerical stability (default: 1e-8)</li>
+<li><strong>weight_decay</strong> (<a target="_blank" rel="noopener" href="https://docs.python.org/3/library/functions.html#float"><em>float</em></a><em>,</em> <em>optional</em>) – weight decay coefficient (default: 1e-2)</li>
+<li><strong>amsgrad</strong> (<em>boolean**,</em> <em>optional</em>) – whether to use the AMSGrad variant of this algorithm from the paper <a target="_blank" rel="noopener" href="https://openreview.net/forum?id=ryQu7f-RZ">On the Convergence of Adam and Beyond</a> (default: False)]</li>
+</ul>
+<p>计算流程为：</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/pytorch_adamw_algo.png" alt></p>
+<p>从这个流程来看，没有用 L2 正则化来代替 weight decay，并且上来就做了 weight decay，原文的算法流程里是在最后做 weight decay 的，不过这个顺序没有什么影响。</p>
+<p><a target="_blank" rel="noopener" href="https://github.com/pytorch/pytorch/blob/master/torch/optim/adamw.py">optim.Adamw</a> 里具体的函数 <a target="_blank" rel="noopener" href="https://github.com/pytorch/pytorch/blob/cd51d2a3ecc8ac579bee910f6bafe41a4c41ca80/torch/optim/_functional.py#L111">F.adamw</a> 为：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">adamw</span>(<span class="params">params: <span class="type">List</span>[Tensor],</span></span><br><span class="line"><span class="params">          grads: <span class="type">List</span>[Tensor],</span></span><br><span class="line"><span class="params">          exp_avgs: <span class="type">List</span>[Tensor],</span></span><br><span class="line"><span class="params">          exp_avg_sqs: <span class="type">List</span>[Tensor],</span></span><br><span class="line"><span class="params">          max_exp_avg_sqs: <span class="type">List</span>[Tensor],</span></span><br><span class="line"><span class="params">          state_steps: <span class="type">List</span>[<span class="built_in">int</span>],</span></span><br><span class="line"><span class="params">          *,</span></span><br><span class="line"><span class="params">          amsgrad: <span class="built_in">bool</span>,</span></span><br><span class="line"><span class="params">          beta1: <span class="built_in">float</span>,</span></span><br><span class="line"><span class="params">          beta2: <span class="built_in">float</span>,</span></span><br><span class="line"><span class="params">          lr: <span class="built_in">float</span>,</span></span><br><span class="line"><span class="params">          weight_decay: <span class="built_in">float</span>,</span></span><br><span class="line"><span class="params">          eps: <span class="built_in">float</span></span>):</span><br><span class="line">    <span class="string">r&quot;&quot;&quot;Functional API that performs AdamW algorithm computation.</span></span><br><span class="line"><span class="string">    See :class:`~torch.optim.AdamW` for details.</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">for</span> i, param <span class="keyword">in</span> <span class="built_in">enumerate</span>(params):</span><br><span class="line">        grad = grads[i]</span><br><span class="line">        exp_avg = exp_avgs[i]</span><br><span class="line">        exp_avg_sq = exp_avg_sqs[i]</span><br><span class="line">        step = state_steps[i]</span><br><span class="line"></span><br><span class="line">        <span class="comment"># Perform stepweight decay</span></span><br><span class="line">        param.mul_(<span class="number">1</span> - lr * weight_decay)</span><br><span class="line"></span><br><span class="line">        bias_correction1 = <span class="number">1</span> - beta1 ** step</span><br><span class="line">        bias_correction2 = <span class="number">1</span> - beta2 ** step</span><br><span class="line"></span><br><span class="line">        <span class="comment"># Decay the first and second moment running average coefficient</span></span><br><span class="line">        exp_avg.mul_(beta1).add_(grad, alpha=<span class="number">1</span> - beta1)</span><br><span class="line">        exp_avg_sq.mul_(beta2).addcmul_(grad, grad, value=<span class="number">1</span> - beta2)</span><br><span class="line">        <span class="keyword">if</span> amsgrad:</span><br><span class="line">            <span class="comment"># Maintains the maximum of all 2nd moment running avg. till now</span></span><br><span class="line">            torch.maximum(max_exp_avg_sqs[i], exp_avg_sq, out=max_exp_avg_sqs[i])</span><br><span class="line">            <span class="comment"># Use the max. for normalizing running avg. of gradient</span></span><br><span class="line">            denom = (max_exp_avg_sqs[i].sqrt() / math.sqrt(bias_correction2)).add_(eps)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            denom = (exp_avg_sq.sqrt() / math.sqrt(bias_correction2)).add_(eps)</span><br><span class="line"></span><br><span class="line">        step_size = lr / bias_correction1</span><br><span class="line"></span><br><span class="line">        param.addcdiv_(exp_avg, denom, value=-step_size)</span><br></pre></td></tr></table></figure>
+<h2 id="调整学习率"><span class="post-title-index">4. </span><a href="#调整学习率" class="headerlink" title="调整学习率"></a>调整学习率</h2><p>PyTorch 调整学习率的类都在 <code>torch.optim.lr_scheduler</code> 中，如 <code>torch.optim.lr_scheduler.ReduceLROnPlateau</code>。</p>
+<h3 id="ReduceLROnPlateau"><span class="post-title-index">4.1. </span><a href="#ReduceLROnPlateau" class="headerlink" title="ReduceLROnPlateau"></a>ReduceLROnPlateau</h3><p>类签名：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, </span><br><span class="line">                                           mode=<span class="string">&#x27;min&#x27;</span>, </span><br><span class="line">                                           factor=<span class="number">0.1</span>, </span><br><span class="line">                                           patience=<span class="number">10</span>, </span><br><span class="line">                                           threshold=<span class="number">0.0001</span>, </span><br><span class="line">                                           threshold_mode=<span class="string">&#x27;rel&#x27;</span>, </span><br><span class="line">                                           cooldown=<span class="number">0</span>, </span><br><span class="line">                                           min_lr=<span class="number">0</span>, </span><br><span class="line">                                           eps=<span class="number">1e-08</span>, </span><br><span class="line">                                           verbose=<span class="literal">False</span>)</span><br></pre></td></tr></table></figure>
+<p>各个参数的含义如下：</p>
+<ul>
+<li><strong>optimizer</strong> (<a target="_blank" rel="noopener" href="https://pytorch.org/docs/stable/optim.html#torch.optim.Optimizer"><em>Optimizer</em></a>) – Wrapped optimizer.</li>
+<li><strong>mode</strong> (<a target="_blank" rel="noopener" href="https://docs.python.org/3/library/stdtypes.html#str"><em>str</em></a>) – One of min, max. In min mode, lr will be reduced when the quantity monitored has stopped decreasing; in max mode it will be reduced when the quantity monitored has stopped increasing. Default: ‘min’.</li>
+<li><strong>factor</strong> (<a target="_blank" rel="noopener" href="https://docs.python.org/3/library/functions.html#float"><em>float</em></a>) – Factor by which the learning rate will be reduced. new_lr = lr * factor. Default: 0.1.</li>
+<li><strong>patience</strong> (<a target="_blank" rel="noopener" href="https://docs.python.org/3/library/functions.html#int"><em>int</em></a>) – Number of epochs with no improvement after which learning rate will be reduced. For example, if patience = 2, then we will ignore the first 2 epochs with no improvement, and will only decrease the LR after the 3rd epoch if the loss still hasn’t improved then. Default: 10.</li>
+<li><strong>threshold</strong> (<a target="_blank" rel="noopener" href="https://docs.python.org/3/library/functions.html#float"><em>float</em></a>) – Threshold for measuring the new optimum, to only focus on significant changes. Default: 1e-4.</li>
+<li><strong>threshold_mode</strong> (<a target="_blank" rel="noopener" href="https://docs.python.org/3/library/stdtypes.html#str"><em>str</em></a>) – One of rel, abs. In rel mode, dynamic_threshold = best <em> ( 1 + threshold ) in ‘max’ mode or best </em> ( 1 - threshold ) in min mode. In abs mode, dynamic_threshold = best + threshold in max mode or best - threshold in min mode. Default: ‘rel’. “rel” 是 relative 的意思，”abs” 是 absolute 的意思</li>
+<li><strong>cooldown</strong> (<a target="_blank" rel="noopener" href="https://docs.python.org/3/library/functions.html#int"><em>int</em></a>) – Number of epochs to wait before resuming normal operation after lr has been reduced. Default: 0. 学习率调整后，在 cooldown 个 epoch 内，学习率不参与调整。即使在这期间指标 在 patience 个 epoch 之内没有提升，也不调整学习率</li>
+<li><strong>min_lr</strong> (<a target="_blank" rel="noopener" href="https://docs.python.org/3/library/functions.html#float"><em>float</em></a> <em>or</em> <a target="_blank" rel="noopener" href="https://docs.python.org/3/library/stdtypes.html#list"><em>list</em></a>) – A scalar or a list of scalars. A lower bound on the learning rate of all param groups or each group respectively. Default: 0.</li>
+<li><strong>eps</strong> (<a target="_blank" rel="noopener" href="https://docs.python.org/3/library/functions.html#float"><em>float</em></a>) – Minimal decay applied to lr. If the difference between new and old lr is smaller than eps, the update is ignored. Default: 1e-8.</li>
+<li><strong>verbose</strong> (<a target="_blank" rel="noopener" href="https://docs.python.org/3/library/functions.html#bool"><em>bool</em></a>) – If <code>True</code>, prints a message to stdout for each update. Default: <code>False</code>.</li>
+</ul>
+<p>这个类是直接对 optimizer 的 <code>param_groups</code> 变量的 <code>lr</code> 键进行调整的，可以从源码（<a target="_blank" rel="noopener" href="https://pytorch.org/docs/stable/_modules/torch/optim/lr_scheduler.html#:~:text=def%20_reduce_lr(self%2C%20epoch">torch.optim.lr_scheduler.ReduceLROnPlateau._reduce_lr</a>%3A)）得知：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">_reduce_lr</span>(<span class="params">self, epoch</span>):</span><br><span class="line">    <span class="keyword">for</span> i, param_group <span class="keyword">in</span> <span class="built_in">enumerate</span>(self.optimizer.param_groups):</span><br><span class="line">        old_lr = <span class="built_in">float</span>(param_group[<span class="string">&#x27;lr&#x27;</span>])</span><br><span class="line">        new_lr = <span class="built_in">max</span>(old_lr * self.factor, self.min_lrs[i])</span><br><span class="line">        <span class="keyword">if</span> old_lr - new_lr &gt; self.eps:</span><br><span class="line">            param_group[<span class="string">&#x27;lr&#x27;</span>] = new_lr</span><br><span class="line">            <span class="keyword">if</span> self.verbose:</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">&#x27;Epoch &#123;:5d&#125;: reducing learning rate&#x27;</span></span><br><span class="line">                      <span class="string">&#x27; of group &#123;&#125; to &#123;:.4e&#125;.&#x27;</span>.<span class="built_in">format</span>(epoch, i, new_lr))</span><br></pre></td></tr></table></figure>
+<p>使用方法一般如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">optimizer = torch.optim.SGD(model.parameters(), lr=<span class="number">0.1</span>, momentum=<span class="number">0.9</span>)</span><br><span class="line">scheduler = ReduceLROnPlateau(optimizer, <span class="string">&#x27;min&#x27;</span>)</span><br><span class="line"><span class="keyword">for</span> epoch <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">10</span>):</span><br><span class="line">    train(...)</span><br><span class="line">    val_loss = validate(...)</span><br><span class="line">    <span class="comment"># Note that step should be called after validate()</span></span><br><span class="line">    scheduler.step(val_loss)</span><br></pre></td></tr></table></figure>
+<h3 id="CosineAnnealingLR"><span class="post-title-index">4.2. </span><a href="#CosineAnnealingLR" class="headerlink" title="CosineAnnealingLR"></a>CosineAnnealingLR</h3><p>类签名：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, </span><br><span class="line">                                           T_max, </span><br><span class="line">                                           eta_min=<span class="number">0</span>, </span><br><span class="line">                                           last_epoch=- <span class="number">1</span>, </span><br><span class="line">                                           verbose=<span class="literal">False</span>)</span><br></pre></td></tr></table></figure>
+<p>官方文档给了一个公式说明，但看得不是很明白：</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/pytorch_cosine_annealing2.png" alt></p>
+<p>其中的 $\eta<em>{max}$ 就是优化器的<strong>初始学习率</strong>，是整个学习率调整过程中余弦值的峰值，$\eta</em>{min}$ 是最小学习率，手动设置，默认为 0，是余弦值的谷底值。$T_{max}$ 其实就是余弦函数的<strong>半周期值</strong>。该调整方法对学习率的改变可以做个图看看，代码为：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> torch <span class="keyword">import</span> optim</span><br><span class="line"><span class="keyword">from</span> torch.optim <span class="keyword">import</span> lr_scheduler</span><br><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line"></span><br><span class="line">lr_list = []</span><br><span class="line">model = squeezenet  <span class="comment"># 这里随便设置一个网络就行</span></span><br><span class="line"></span><br><span class="line">LR = <span class="number">0.01</span></span><br><span class="line">optimizer = optim.Adam(model.parameters(),lr = LR)</span><br><span class="line">scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max = <span class="number">10</span>)</span><br><span class="line"></span><br><span class="line">epochs = <span class="number">100</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> epoch <span class="keyword">in</span> <span class="built_in">range</span>(epochs):</span><br><span class="line">    scheduler.step()</span><br><span class="line">    lr_list.append(optimizer.state_dict()[<span class="string">&#x27;param_groups&#x27;</span>][<span class="number">0</span>][<span class="string">&#x27;lr&#x27;</span>])</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># plt.xticks(range(1, epochs+1))  # 用于调整刻度值</span></span><br><span class="line">plt.plot(<span class="built_in">range</span>(<span class="number">1</span>, epochs+<span class="number">1</span>), lr_list, color=<span class="string">&#x27;r&#x27;</span>)</span><br><span class="line"></span><br><span class="line">plt.savefig(<span class="string">&quot;cosine_annealing_lr.png&quot;</span>, dpi=<span class="number">100</span>)</span><br></pre></td></tr></table></figure>
+<p>下面是学习率变化曲线，可以看出半周期是 10。</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/cosine_annealing_lr_100.png" alt></p>
+<h3 id="CosineAnnealingWarmRestarts"><span class="post-title-index">4.3. </span><a href="#CosineAnnealingWarmRestarts" class="headerlink" title="CosineAnnealingWarmRestarts"></a>CosineAnnealingWarmRestarts</h3><p>带热启动的余弦退火学习率调整机制，参见文章 <a target="_blank" rel="noopener" href="https://arxiv.org/abs/1608.03983">SGDR: Stochastic Gradient Descent with Warm Restarts</a>。这个机制，是学习率按照余弦函数下降，降到最低点时直接一步回到最高点，所以叫「热重启」。</p>
+<p>类签名：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, </span><br><span class="line">                                                     T_0, </span><br><span class="line">                                                     T_mult=<span class="number">1</span>, </span><br><span class="line">                                                     eta_min=<span class="number">0</span>, </span><br><span class="line">                                                     last_epoch=- <span class="number">1</span>, </span><br><span class="line">                                                     verbose=<span class="literal">False</span>)</span><br></pre></td></tr></table></figure>
+<p>官方文档的说明如下：</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/pytorch_cosine_annealing_wr.png" alt></p>
+<p>这里的 $\eta<em>{max}$ 和 $\eta</em>{min}$ 的含义和 <code>CosineAnnealingLR</code> 里的含义是一样的。</p>
+<p>$T<em>0$ 的含义是学习率<strong>第一次</strong>回到初始值的 epoch 位置。如果只说到这里，其实这个 $T_0$ 和 <code>CosineAnnealingLR</code> 里的 $T</em>{max}$ 的含义是一样的，都是余弦函数的半周期。但之所以这里用的下标是 0 而不是 $max$，并且也强调了是「第一次」回到初始值的 epoch 位置，是因为还要考虑 <code>T_mult</code> 这个参数。</p>
+<p><code>T_mult</code> 参数控制了学习率变化的速度：</p>
+<ul>
+<li>如果 <code>T_mult=1</code>，那么 $T_0$ 就是余弦函数的半周期（在热重启里，其实只有半个周期，不存在整个周期），即学习率会在 $T_0$, $2T_0$, $3T_0$, $\dots$ 处回到最大值（初始学习率）</li>
+<li>如果 <code>T_mult&gt;1</code>，则学习率会在 $T<em>0$, $(1 + T</em>{mult})T<em>0$, $(1 + T</em>{mult} + T<em>{mult}^2)T_0$, $\dots$, $(1 + T</em>{mult} + T<em>{mult}^2 + \cdots + T</em>{mult}^i)T_0$ 处回到最大值</li>
+<li>如果 <code>T_mult&lt;1</code>，会报错</li>
+</ul>
+<p>对比一下二者的学习率变化曲线，代码为：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">lr_list = []</span><br><span class="line">model = squeezenet</span><br><span class="line"></span><br><span class="line">LR = <span class="number">0.01</span></span><br><span class="line">optimizer = optim.Adam(model.parameters(),lr = LR)</span><br><span class="line">scheduler = lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0 = <span class="number">10</span>, T_mult=<span class="number">1</span>) <span class="comment"># T_mult may change to 2</span></span><br><span class="line"></span><br><span class="line">epochs = <span class="number">100</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> epoch <span class="keyword">in</span> <span class="built_in">range</span>(epochs):</span><br><span class="line">    scheduler.step()</span><br><span class="line">    lr_list.append(optimizer.state_dict()[<span class="string">&#x27;param_groups&#x27;</span>][<span class="number">0</span>][<span class="string">&#x27;lr&#x27;</span>])</span><br><span class="line"></span><br><span class="line"><span class="comment"># plt.xticks(range(1, epochs+1))</span></span><br><span class="line">plt.plot(<span class="built_in">range</span>(<span class="number">1</span>, epochs+<span class="number">1</span>), lr_list, color=<span class="string">&#x27;r&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/cosine_annealing_wr_1_lr.png" alt></p>
+<center>CosineAnnealingWR with T_0 = 10 and T_mult = 1</center>
+
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/cosine_annealing_wr_2_lr.png" alt></p>
+<center>CosineAnnealingWR with T_0 = 10 and T_mult = 2</center>
+
+<p>可以看到，当 <code>T_mult=1</code> 时，学习率都是在第 10, 20, 30, … 个 epoch 的时候回到最大值。当 <code>T_mult=2</code> 时，学习率在第 10, 30, 70, … 个 epoch 的时候回到最大值。</p>
+<blockquote>
+<p>在调节参数的时候，一定要根据自己总的epoch合理的设置参数，不然很可能达不到预期的效果,经过我自己的试验发现，如果是用那种等间隔的退火策略（<code>CosineAnnealingLR</code> 和 <code>T*mult=1</code> 的 <code>CosineAnnealingWarmRestarts</code>），验证准确率总是会在学习率的最低点达到一个很好的效果，而随着学习率回升，验证精度会有所下降.所以为了能最终得到一个更好的收敛点，设置 <code>T_mult&gt;1</code> 是很有必要的，这样到了训练后期，学习率不会再有一个回升的过程,而且一直下降直到训练结束。</p>
+<p>引用自：<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/261134624">pytorch的余弦退火学习率</a></p>
+</blockquote>
+<p>这个优化器使用时，可以直接使用 <code>step()</code> 更新，如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">optimizer = torch.optim.SGD(model.parameters(), lr=<span class="number">0.1</span>, momentum=<span class="number">0.9</span>)</span><br><span class="line">scheduler = CosineAnnealingWarmRestarts(optimizer, T_0 = <span class="number">10</span>, T_mult=<span class="number">1</span>)</span><br><span class="line"><span class="keyword">for</span> epoch <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">10</span>):</span><br><span class="line">    train(...)</span><br><span class="line">    val_loss = validate(...)</span><br><span class="line">    <span class="comment"># Note that step should be called after validate()</span></span><br><span class="line">    scheduler.step()</span><br></pre></td></tr></table></figure>
+<p>这时是以 epoch 为单位更新，即在一个 epoch 内的所有 batch，都用同一个学习率。</p>
+<p>还可以以 batch 为单位更新（这个使用方法来源于官方文档），如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">scheduler = CosineAnnealingWarmRestarts(optimizer, T_0, T_mult)</span><br><span class="line">iters = <span class="built_in">len</span>(dataloader)</span><br><span class="line"><span class="keyword">for</span> epoch <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">20</span>):</span><br><span class="line">    <span class="keyword">for</span> i, sample <span class="keyword">in</span> <span class="built_in">enumerate</span>(dataloader):</span><br><span class="line">        inputs, labels = sample[<span class="string">&#x27;inputs&#x27;</span>], sample[<span class="string">&#x27;labels&#x27;</span>]</span><br><span class="line">        optimizer.zero_grad()</span><br><span class="line">        outputs = net(inputs)</span><br><span class="line">        loss = criterion(outputs, labels)</span><br><span class="line">        loss.backward()</span><br><span class="line">        optimizer.step()</span><br><span class="line">        scheduler.step(epoch + i / iters)  <span class="comment"># 这一行</span></span><br></pre></td></tr></table></figure>
+<p><strong>一点疑惑：</strong></p>
+<p>关于这个以 batch 为单位，很自然的一种想法是我还是用 <code>step()</code> 更新，但我是每个 batch 的时候都使用一次 <code>scheduler.step()</code>，那么这个和使用 <code>scheduler.step(epoch + i / iters)</code> 会不会是一样的呢？我做了一下对比。</p>
+<p>首先是每个 batch 使用 <code>scheduler.step()</code> 函数，把这种情况叫做「step 无参数」：</p>
+<figure class="highlight plaintext"><figcaption><span>n</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">lr_list = []</span><br><span class="line">model = squeezenet</span><br><span class="line"></span><br><span class="line">LR = 0.01</span><br><span class="line">optimizer = optim.Adam(model.parameters(),lr = LR)</span><br><span class="line">scheduler = lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0 = 10, T_mult=1)</span><br><span class="line"></span><br><span class="line">epochs = 20</span><br><span class="line">batches = 5</span><br><span class="line"></span><br><span class="line">for epoch in range(epochs):</span><br><span class="line">    for batch in range(batches):</span><br><span class="line">        scheduler.step()</span><br><span class="line">        lr_list.append(optimizer.state_dict()[&#x27;param_groups&#x27;][0][&#x27;lr&#x27;])</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">plt.plot(range(1, epochs*batches+1), lr_list, color=&#x27;r&#x27;)</span><br></pre></td></tr></table></figure>
+<p>它的学习率变化曲线如下：</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/cosine_annealing_wr_step1_lr.png" alt></p>
+<p>另一种是每个 batch 使用 <code>scheduler.step(epoch + i / iters)</code> 函数，把这种情况叫做「step 有参数」：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">lr_list = []</span><br><span class="line">model = squeezenet</span><br><span class="line"></span><br><span class="line">LR = <span class="number">0.01</span></span><br><span class="line">optimizer = optim.Adam(model.parameters(),lr = LR)</span><br><span class="line">scheduler = lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0 = <span class="number">10</span>, T_mult=<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">epochs = <span class="number">20</span></span><br><span class="line">batches = <span class="number">5</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> epoch <span class="keyword">in</span> <span class="built_in">range</span>(epochs):</span><br><span class="line">    <span class="keyword">for</span> batch <span class="keyword">in</span> <span class="built_in">range</span>(batches):</span><br><span class="line">        scheduler.step(epoch + batch / batches)</span><br><span class="line">        lr_list.append(optimizer.state_dict()[<span class="string">&#x27;param_groups&#x27;</span>][<span class="number">0</span>][<span class="string">&#x27;lr&#x27;</span>])</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">plt.plot(<span class="built_in">range</span>(<span class="number">1</span>, epochs*batches+<span class="number">1</span>), lr_list, color=<span class="string">&#x27;r&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<p>它的学习率变化曲线如下所示：</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/cosine_annealing_wr_step2_lr.png" alt></p>
+<p>可以看出两种方法对学习率调整的情况实际上是不一样的。分析这两种不同时，我们先把每次调用 <code>scheduler</code> 的 <code>step</code> 函数这个操作叫做「步」。两种方法的 epoch 都设置为 20，每个 epoch 的 batch 数量都为 5。</p>
+<p>对于 「step 无参数」的方法，其实是在每一个 batch 都让 scheduler 作用了一步，所以这种方法的学习率变化曲线跟设置 100 个 epoch，每个 epoch 更新一次的曲线是一样的。</p>
+<p>对于「step 有参数」的方法，每个 batch 时 scheduler 作用的不是一步，而是 0.2 步（1 除以 batch 数量），这样需要作用 50 个 batch 步数才到达 $T_0=10$，也就形成了曲线里横坐标为 50 的时候学习率回到最高值。</p>
+<p>上面的解释如果有点模糊，可以看一下 <code>CosineAnnealingWarmRestarts</code> 的 <code>step</code> 函数源代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">step</span>(<span class="params">self, epoch=<span class="literal">None</span></span>):</span><br><span class="line">    <span class="keyword">if</span> epoch <span class="keyword">is</span> <span class="literal">None</span> <span class="keyword">and</span> self.last_epoch &lt; <span class="number">0</span>:</span><br><span class="line">        epoch = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> epoch <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        epoch = self.last_epoch + <span class="number">1</span></span><br><span class="line">        self.T_cur = self.T_cur + <span class="number">1</span></span><br><span class="line">        <span class="keyword">if</span> self.T_cur &gt;= self.T_i:</span><br><span class="line">            self.T_cur = self.T_cur - self.T_i</span><br><span class="line">            self.T_i = self.T_i * self.T_mult</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">if</span> epoch &lt; <span class="number">0</span>:</span><br><span class="line">            <span class="keyword">raise</span> ValueError(<span class="string">&quot;Expected non-negative epoch, but got &#123;&#125;&quot;</span>.<span class="built_in">format</span>(epoch))</span><br><span class="line">        <span class="keyword">if</span> epoch &gt;= self.T_0:</span><br><span class="line">            <span class="keyword">if</span> self.T_mult == <span class="number">1</span>:</span><br><span class="line">                self.T_cur = epoch % self.T_0</span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                n = <span class="built_in">int</span>(math.log((epoch / self.T_0 * (self.T_mult - <span class="number">1</span>) + <span class="number">1</span>), self.T_mult))</span><br><span class="line">                self.T_cur = epoch - self.T_0 * (self.T_mult ** n - <span class="number">1</span>) / (self.T_mult - <span class="number">1</span>)</span><br><span class="line">                self.T_i = self.T_0 * self.T_mult ** (n)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            self.T_i = self.T_0</span><br><span class="line">            self.T_cur = epoch</span><br><span class="line">    self.last_epoch = math.floor(epoch)</span><br></pre></td></tr></table></figure>
+<p>这个函数里有个参数 <code>epoch</code>，可以把这个 <code>epoch</code> 理解为上面所说的「步」。使用「step 无参数」方法时，每次调用 <code>step</code>，<code>epoch</code> 参数都会设置为 <code>None</code>，根据第 5 - 6 行，这时候会把 <code>epoch</code> 加 1，也就是说，这时候「步」会加 1（这时「步」一直会是整数）。而使用「step 有参数」方法时，每次调用 <code>step</code>，会执行第 12 - 23 行的代码，这时的「步」不会自动加 1（因为参数已经提供了 <code>epoch</code> 值，<code>epoch</code> 每次加 0.2）。</p>
+<p>以上两种情况的不同，仍然觉得没有解释的好，只能根据代码大概意会，等以后再继续学习吧。</p>
+<h3 id="LambdaLR"><span class="post-title-index">4.4. </span><a href="#LambdaLR" class="headerlink" title="LambdaLR"></a>LambdaLR</h3><p>类签名：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">torch.optim.lr_scheduler.LambdaLR(optimizer, </span><br><span class="line">                                  lr_lambda, </span><br><span class="line">                                  last_epoch=- <span class="number">1</span>, </span><br><span class="line">                                  verbose=<span class="literal">False</span>)</span><br></pre></td></tr></table></figure>
+<p>自定义学习率变化，通过 <code>lambda_lr</code>，一个自定义函数来调整，<code>lambda_lr</code> 不是直接返回学习率，而是返回一个与学习率相乘的因子，来确定最终的实际学习率。<code>lambda_lr</code> 可以是一个函数，也可以是一个函数列表，用于对不同的 <code>param_groups</code> 实行不同的学习率调整机制。<code>lambda_lr</code> 的参数是一个表示 epoch 的单参数。</p>
+<p>官方文档的参数说明：</p>
+<ul>
+<li><strong>optimizer</strong> (<a target="_blank" rel="noopener" href="https://pytorch.org/docs/stable/optim.html#torch.optim.Optimizer"><em>Optimizer</em></a>) – Wrapped optimizer.</li>
+<li><strong>lr_lambda</strong> (<em>function</em> <em>or</em> <a target="_blank" rel="noopener" href="https://docs.python.org/3/library/stdtypes.html#list"><em>list</em></a>) – A function which computes a multiplicative factor given an integer parameter epoch, or a list of such functions, one for each group in optimizer.param_groups.</li>
+<li><strong>last_epoch</strong> (<a target="_blank" rel="noopener" href="https://docs.python.org/3/library/functions.html#int"><em>int</em></a>) – The index of last epoch. Default: -1.</li>
+<li><strong>verbose</strong> (<a target="_blank" rel="noopener" href="https://docs.python.org/3/library/functions.html#bool"><em>bool</em></a>) – If <code>True</code>, prints a message to stdout for each update. Default: <code>False</code>.</li>
+</ul>
+<p>官方示例：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Assuming optimizer has two groups.</span></span><br><span class="line">lambda1 = <span class="keyword">lambda</span> epoch: epoch // <span class="number">30</span></span><br><span class="line">lambda2 = <span class="keyword">lambda</span> epoch: <span class="number">0.95</span> ** epoch</span><br><span class="line">scheduler = LambdaLR(optimizer, lr_lambda=[lambda1, lambda2])</span><br><span class="line"><span class="keyword">for</span> epoch <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">100</span>):</span><br><span class="line">    train(...)</span><br><span class="line">    validate(...)</span><br><span class="line">    scheduler.step()</span><br></pre></td></tr></table></figure>
+<p>HuggingFace 的 <code>pytorch_transformers</code> 库里的学习率调整机制就是继承 <code>LambdaLR</code> 类的。</p>
+<h2 id="Reference"><span class="post-title-index">5. </span><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h2><ol>
+<li><a target="_blank" rel="noopener" href="https://pytorch.org/docs/stable/optim.html">PyTorch optim 官方文档</a></li>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/87209990">知乎文章：【PyTorch】优化器 torch.optim.Optimizer</a></li>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/261134624">pytorch的余弦退火学习率</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E4%BC%98%E5%8C%96%E5%99%A8/" rel="tag"># 优化器</a>
+              <a href="/tags/PyTorch/" rel="tag"># PyTorch</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/11/10/paper-decoupled/" rel="prev" title="论文阅读：Decoupled Weight Decay Regularization">
+      <i class="fa fa-chevron-left"></i> 论文阅读：Decoupled Weight Decay Regularization
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/01/11/paper-mocov1/" rel="next" title="论文阅读：Momentum Contrast for Unsupervised Visual Representatin Learning">
+      论文阅读：Momentum Contrast for Unsupervised Visual Representatin Learning <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E5%99%A8%E7%9A%84%E9%80%9A%E7%94%A8%E7%94%A8%E6%B3%95"><span class="nav-text">1. 优化器的通用用法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B%E7%9A%84%E4%B8%8D%E5%90%8C%E9%83%A8%E5%88%86%E4%BD%BF%E7%94%A8%E4%B8%8D%E5%90%8C%E7%9A%84%E4%BC%98%E5%8C%96%E5%99%A8%E8%B6%85%E5%8F%82%E6%95%B0"><span class="nav-text">1.1. 模型的不同部分使用不同的优化器超参数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%BB%E7%BB%93%E6%A8%A1%E5%9E%8B%E9%83%A8%E5%88%86%E5%B1%82%E7%9A%84%E5%8F%82%E6%95%B0"><span class="nav-text">1.2. 冻结模型部分层的参数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E6%97%B6%E4%BD%BF%E7%94%A8%E4%BC%98%E5%8C%96%E5%99%A8%E7%9A%84%E6%AD%A5%E9%AA%A4"><span class="nav-text">1.3. 训练时使用优化器的步骤</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E7%B1%BB%E4%BC%98%E5%8C%96%E5%99%A8-Optimizer"><span class="nav-text">2. 基类优化器 Optimizer</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E4%BA%9B%E5%B8%B8%E7%94%A8%E7%9A%84%E4%BC%98%E5%8C%96%E5%99%A8"><span class="nav-text">3. 一些常用的优化器</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#SGD-%E4%BC%98%E5%8C%96%E5%99%A8"><span class="nav-text">3.1. SGD 优化器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Adam-%E4%BC%98%E5%8C%96%E5%99%A8"><span class="nav-text">3.2. Adam 优化器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AdamW-%E4%BC%98%E5%8C%96%E5%99%A8"><span class="nav-text">3.3. AdamW 优化器</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B0%83%E6%95%B4%E5%AD%A6%E4%B9%A0%E7%8E%87"><span class="nav-text">4. 调整学习率</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ReduceLROnPlateau"><span class="nav-text">4.1. ReduceLROnPlateau</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CosineAnnealingLR"><span class="nav-text">4.2. CosineAnnealingLR</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CosineAnnealingWarmRestarts"><span class="nav-text">4.3. CosineAnnealingWarmRestarts</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#LambdaLR"><span class="nav-text">4.4. LambdaLR</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Reference"><span class="nav-text">5. Reference</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="TimeOverflow"
+      src="/uploads/avatar.jpg">
+  <p class="site-author-name" itemprop="name">TimeOverflow</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">16</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/TimeOverflow" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;TimeOverflow" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:zhangz1220@outlook.com" title="E-Mail → mailto:zhangz1220@outlook.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">TimeOverflow</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">102k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">1:33</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'N3GrQmFE8RVjH8Sk6s4B7xnY-9Nh9j0Va',
+      appKey     : '4KwTSki3hoVvxnEwsxogPOKb',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : true,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

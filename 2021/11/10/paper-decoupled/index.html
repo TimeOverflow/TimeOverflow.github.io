@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.1">
+<meta name="google-site-verification" content="nRdQ64asSdtMIPKmtAL6qJO9Ka3rBCML55licirmHbo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/panda-apple.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/panda-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/panda-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"timeoverflow.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="训练神经网络时会使用 weight decay，decay，词义是『 衰减、减小』，weight decay，使网络层的参数减小，以使得网络获得更好的性能，也避免梯度爆炸的情况出现。现在的各种优化器，如 SGD, Adam 等，在使用的时候都会有一个参数 weight_decay。现在的各种框架中，实际上是用 L2 正则化来实现 weight decay 的，也就是说，这些框架认为 weight">
+<meta property="og:type" content="article">
+<meta property="og:title" content="论文阅读：Decoupled Weight Decay Regularization">
+<meta property="og:url" content="https://timeoverflow.github.io/2021/11/10/paper-decoupled/index.html">
+<meta property="og:site_name" content="时间溢出的地方">
+<meta property="og:description" content="训练神经网络时会使用 weight decay，decay，词义是『 衰减、减小』，weight decay，使网络层的参数减小，以使得网络获得更好的性能，也避免梯度爆炸的情况出现。现在的各种优化器，如 SGD, Adam 等，在使用的时候都会有一个参数 weight_decay。现在的各种框架中，实际上是用 L2 正则化来实现 weight decay 的，也就是说，这些框架认为 weight">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/sdgw_algo.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/adamw_algo.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/adam_damw.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/adam_sgd.png">
+<meta property="article:published_time" content="2021-11-10T14:53:17.000Z">
+<meta property="article:modified_time" content="2022-01-12T08:05:15.965Z">
+<meta property="article:author" content="TimeOverflow">
+<meta property="article:tag" content="优化器">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/sdgw_algo.png">
+
+<link rel="canonical" href="https://timeoverflow.github.io/2021/11/10/paper-decoupled/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>论文阅读：Decoupled Weight Decay Regularization | 时间溢出的地方</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">时间溢出的地方</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/TimeOverflow" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://timeoverflow.github.io/2021/11/10/paper-decoupled/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/uploads/avatar.jpg">
+      <meta itemprop="name" content="TimeOverflow">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="时间溢出的地方">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          论文阅读：Decoupled Weight Decay Regularization
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-11-10 22:53:17" itemprop="dateCreated datePublished" datetime="2021-11-10T22:53:17+08:00">2021-11-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-01-12 16:05:15" itemprop="dateModified" datetime="2022-01-12T16:05:15+08:00">2022-01-12</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">论文阅读</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2021/11/10/paper-decoupled/" class="post-meta-item leancloud_visitors" data-flag-title="论文阅读：Decoupled Weight Decay Regularization" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2021/11/10/paper-decoupled/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2021/11/10/paper-decoupled/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>6.7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>6 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>训练神经网络时会使用 weight decay，decay，词义是『 衰减、减小』，weight decay，使网络层的参数减小，以使得网络获得更好的性能，也避免梯度爆炸的情况出现。现在的各种优化器，如 SGD, Adam 等，在使用的时候都会有一个参数 <code>weight_decay</code>。现在的各种框架中，实际上是用 L2 正则化来实现 weight decay 的，也就是说，这些框架认为 weight decay 和 L2 正则化是等价的。在说到 L2 正则化的作用时，也经常会提到 L2 正则化可以使得权重减小，起到 weight decay 的作用。本文做的工作，首先证明了 weight decay 在 SGD 优化器中与 L2 正则化确实是等价的，但在 Adam 优化器中却不是这样，因此现在在 Adam 优化器中也用 L2 正则化来实现 weight decay 是有问题的，并没有真正起到 weight decay 的作用，会降低 Adam 优化器的泛化性能。针对这个问题，作者又提出了改进措施。</p>
+<p>论文标题：Decoupled Weight Decay Regularization</p>
+<p>作者：Ilya Loshchilov, Frank Hutter</p>
+<p>发表于 ICLR 2019</p>
+<p>地址：<a target="_blank" rel="noopener" href="https://arxiv.org/abs/1711.05101">arXiv</a> , <a target="_blank" rel="noopener" href="https://openreview.net/forum?id=Bkg6RiCqY7">OpenReview</a></p>
+<span id="more"></span>
+<h2 id="SGD-和-Adam-优化器中的-weight-decay-与-L2-正则化"><span class="post-title-index">1. </span><a href="#SGD-和-Adam-优化器中的-weight-decay-与-L2-正则化" class="headerlink" title="SGD 和 Adam 优化器中的 weight decay 与 L2 正则化"></a>SGD 和 Adam 优化器中的 weight decay 与 L2 正则化</h2><p>首先给出 weight decay 的定义，这个定义是在文章 <sup><a href="#fn_Hanson & Pratt (1988)" id="reffn_Hanson & Pratt (1988)">Hanson & Pratt (1988)</a></sup> 中被提出的：</p>
+<script type="math/tex; mode=display">
+\boldsymbol{\theta}_{t+1}=(1-\lambda) \boldsymbol{\theta}_{t}-\alpha \nabla f_{t}\left(\boldsymbol{\theta}_{t}\right) \,.</script><p>这个公式实际上就是在更新参数的时候，除了减去梯度外，还直接减去一个系数乘以参数本身，这样 weight 就 decay 了。其中 $\lambda$ 是权重衰减系数。$\nabla f_t (\boldsymbol{\theta}_t)$ 是第 $t$ 个 batch 时的梯度。</p>
+<h3 id="解耦-SGD"><span class="post-title-index">1.1. </span><a href="#解耦-SGD" class="headerlink" title="解耦 SGD"></a>解耦 SGD</h3><p>首先给出一个命题：</p>
+<p><strong>Proposition 1:</strong> 对于 SGD 优化器，使用 weight decay，等价于使用 L2 正则化：</p>
+<script type="math/tex; mode=display">
+f_{t}^{r e g}(\boldsymbol{\theta})=f_{t}(\boldsymbol{\theta})+\frac{\lambda^{\prime}}{2}\|\boldsymbol{\theta}\|_{2}^{2} \,,</script><p>其中 $\lambda^{\prime} = \frac{\lambda}{\alpha}$。式中的 reg 是 regulation 的意思，而不是 regression。</p>
+<p>证明如下：</p>
+<p>对 L2 正则化的式子求导，得：</p>
+<script type="math/tex; mode=display">
+\nabla f_{t}^{\mathrm{reg}}\left(\boldsymbol{\theta}_{t}\right)=\nabla f_{t}\left(\boldsymbol{\theta}_{t}\right)+\lambda^{\prime} \boldsymbol{\theta}_{t} \,.</script><p>做一下梯度下降，在学习率为 $\alpha$ 的情况下，得到：</p>
+<script type="math/tex; mode=display">
+\boldsymbol{\theta}_{t+1} \leftarrow \boldsymbol{\theta}_{t}-\alpha \nabla f_{t}^{\mathrm{reg}}\left(\boldsymbol{\theta}_{t}\right)=\boldsymbol{\theta}_{t}-\alpha \nabla f_{t}\left(\boldsymbol{\theta}_{t}\right)-\alpha \lambda^{\prime} \boldsymbol{\theta}_{t} \,.</script><p>与 weight decay 的公式比较，只需要满足 $\lambda = \alpha \lambda^{\prime}$，二者就是等价的，即 $\lambda^{\prime} = \frac{\lambda}{\alpha}$。</p>
+<p>也就是说，只要把 L2 正则化的系数设置一下，在 SGD 里就可以用 L2 正则化代替 weight decay。</p>
+<p>当然从这个式子也可以看出，使用 L2 正则化代替 weight decay 时，L2 的系数如何选取，是跟学习率 $\alpha$ 有关的，这样这个系数跟学习率就是 coupled。比如说我想要设置大小为 $\lambda$ 的 weight decay 系数，现在的深度学习框架里都用 L2 正则化来代替，也就是要事先设置 L2 正则化系数，这个系数需要根据学习率的大小来设置，如果学习率的大小是变的，那就比较好设置；然而现在的学习率通常是变化的，这样设置了固定的 L2 正则化系数后，实际的 weight decay 系数也是在改变的。</p>
+<p>文章标题说 Decoupled Weight Decay Regularization，就是要把这个系数和学习率 decouple（解耦）。因此作者引入了下面的算法：</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/sdgw_algo.png" alt></p>
+<p>其中第 6 行是 L2 正则化算法，在计算梯度的时候就把正则项的导数加上，并根据这个导数计算动量，注意这一行里的 $\lambda$ 是 L2 正则化系数。解耦的方法是不在计算梯度的时候加上 L2 正则项，事实上压根就不用正则项，直接在第 9 行直接对 weight 进行 decay，即 $-\eta<em>t \lambda \boldsymbol{\theta}</em>{t-1}$，抛开 $\eta_t$ 不看，实际上就是 weight decay 的定义，第 12 行里的 $\lambda$ 是 weight decay 的系数。这样 weight decay 的系数和学习率就完全解耦（decouple）了。解耦后的 SGD 算法叫做 <strong>SGDW</strong> (<strong>SGD</strong> with decoupled <strong>W</strong>eight decay)。</p>
+<p>需要说明的这里的 $\eta_t$，是用于调整学习率的，调整学习率不是直接对 $\alpha$ 本身做调整（这个 $\alpha$ 是初始学习率，设定之后就不再变动了），但是每个 step 使用学习率的时候，都会给它乘以一个数 $\eta_t$（文中称其为 multiplier），通过 $\operatorname{SetScheduleMultiplier}$ 函数调整每个 step 的 $\eta_t$，从而间接起到调整实际学习率的效果。</p>
+<h3 id="解耦-Adam"><span class="post-title-index">1.2. </span><a href="#解耦-Adam" class="headerlink" title="解耦 Adam"></a>解耦 Adam</h3><p>命题 1 证明了对于 SGD 优化器，使用 weight decay 等价于使用 L2 正则化。作者提出对于自适应优化器（不止 Adam，AdaGrad, RMSProp 等也是），weight decay 与 L2 正则化不等价，因此实际上不能用 L2 正则化来代替 weight decay。</p>
+<p><strong>Proposition 2:</strong> 对于自适应梯度优化器， weight decay 与 L2 正则化不等价。设对于优化器 $O$，其不带 weight decay 的梯度迭代公式为：</p>
+<script type="math/tex; mode=display">
+\boldsymbol{\theta}_{t+1} \leftarrow \boldsymbol{\theta}_{t}-\alpha \mathbf{M}_{t} \nabla f_{t}\left(\boldsymbol{\theta}_{t}\right) \,.</script><p>带 weight decay 的迭代公式为：</p>
+<script type="math/tex; mode=display">
+\boldsymbol{\theta}_{t+1} \leftarrow(1-\lambda) \boldsymbol{\theta}_{t}-\alpha \mathbf{M}_{t} \nabla f_{t}\left(\boldsymbol{\theta}_{t}\right) \,,</script><p>因为优化器是自适应的，显然 $\mathbf{M}_{t} \neq k \mathbf{I}$ (where $\left.k \in \mathbb{R}\right)$。</p>
+<p>仿照 SGD中的，现在想用在损失函数 $f<em>t$ 上再加 L2 正则化来代替 weight decay，即用 $f</em>{t}^{r e g}(\boldsymbol{\theta})=f<em>{t}(\boldsymbol{\theta})+\frac{\lambda^{\prime}}{2}|\boldsymbol{\theta}|</em>{2}^{2}$ 来代替 $\boldsymbol{\theta}<em>{t+1} \leftarrow \boldsymbol{\theta}</em>{t}-\alpha \mathbf{M}<em>{t} \nabla f</em>{t}\left(\boldsymbol{\theta}_{t}\right)$ 中的 $f_t$，使得这个迭代公式与带 weight decay 的迭代公式等价。然而这样的 L2 正则化系数 $\lambda^{\prime}$ 是不存在的。</p>
+<p>证明如下：</p>
+<p>对使用 L2 正则化的式子求导，得：</p>
+<script type="math/tex; mode=display">
+\boldsymbol{\theta}_{t+1} \leftarrow \boldsymbol{\theta}_{t}-\alpha \lambda^{\prime} \mathbf{M}_{t} \boldsymbol{\theta}_{t}-\alpha \mathbf{M}_{t} \nabla f_{t}\left(\boldsymbol{\theta}_{t}\right) \,.</script><p>如果要使这个式子与带 weight decay 的迭代公式等价，则要求满足</p>
+<script type="math/tex; mode=display">
+\lambda \boldsymbol{\theta}_{t}=\alpha \lambda^{\prime} \mathbf{M}_{t} \boldsymbol{\theta}_{t} \,.</script><p>为了满足上式，需要对于所有 step 的 $\boldsymbol{\theta}<em>t$ 存在 $\mathbf{M}</em>{t}=k \mathbf{I}$，其中 $k \in \mathbb{R}$。而根据前提条件，这个是无法满足的。</p>
+<p>因此不存在 L2 正则化系数 $\lambda^\prime$ 使得在自适应优化器上 L2 正则化等价于 weight decay。</p>
+<p>对于 Adam 优化器，作者同样提出解耦 weight decay 的系数，而不是使用 L2 正则化，如下面的算法流程所示。</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/adamw_algo.png" alt></p>
+<p>作者提出，在 Adam 优化器中直接使用 L2 正则化代替 weight decay 时，会使得不同的 weight 的 decay 程度不一样，而从 weight decay 的原始公式来看，不同的权重的 decay 系数都应该是相同的 $\lambda$。这个原因可以从 <strong>Algorithm 2</strong> 中的公式看出来，使用 L2 正则化时，L2 norm 的梯度是一起加到总梯度里的（第 6 行），回到第 12 行，分母上的 $\hat{\boldsymbol{v}_t}$ 用来调整权重「梯度」下降的多少（「梯度」累计值越大的权重，下降的越少），这里用了加引号的梯度，是因为这里的「梯度」不仅包含了损失函数的梯度，还包含了 L2 norm 的梯度（在用 L2 正则化代替 weight decay 时，L2 norm 的梯度就代表了 weight 的 decay），也就是说，weight decay 的程度，也会受到梯度累计值的大小影响。具体来说，梯度累计值越大的权重，被正则化的越少（也就是 weight decay 的程度越少）。这是不合理的。</p>
+<p>用公式来理解一下上面一段话。把第 6 行和第 7 行代入第 12 行，得到：</p>
+<script type="math/tex; mode=display">
+\begin{align}
+\boldsymbol{\theta}_{t} &\leftarrow \boldsymbol{\theta}_{t-1}-\eta_{t}\left(\alpha \hat{\boldsymbol{m}}_{t} /\left(\sqrt{\hat{\boldsymbol{v}}_{t}}+\epsilon\right)\right. \\
+&= \boldsymbol{\theta}_{t-1} - \eta_t \alpha \frac{\boldsymbol{m}_t / (1-\beta^t_1)}{\sqrt{\hat{\boldsymbol{v}}_{t}}+\epsilon} \\
+&= \boldsymbol{\theta}_{t-1} - \eta_t \alpha \frac{\beta_{1} \boldsymbol{m}_{t-1}+\left(1-\beta_{1}\right) \boldsymbol{g}_{t}}{(1-\beta^t_1)(\sqrt{\hat{\boldsymbol{v}}_{t}}+\epsilon)} \\
+&= \boldsymbol{\theta}_{t-1} - \eta_t \alpha \frac{\beta_{1} \boldsymbol{m}_{t-1}+\left(1-\beta_{1}\right) (\nabla f_{t}\left(\boldsymbol{\theta}_{t-1}\right)+\lambda \boldsymbol{\theta}_{t-1})}{(1-\beta^t_1)(\sqrt{\hat{\boldsymbol{v}}_{t}}+\epsilon)} \,.
+\end{align}</script><p>看右上角的 $\lambda \boldsymbol{\theta}<em>{t-1}$，这应该是起到 weight decay 作用的，但它的实际作用受到分母项 $\sqrt{\hat{\boldsymbol{v}}_t}$ 的影响，$\sqrt{\hat{\boldsymbol{v}}_t}$ 有更大的值，就会使调整后的 $\frac{\lambda \boldsymbol{\theta}</em>{t-1}}{\sqrt{\hat{\boldsymbol{v}}_{t}}}$ 更小，在这个方向上 $\boldsymbol{\theta}$ 被正则化地更少，这是不合理的。而使用解耦后的公式，weight decay 就不会收到积累的历史梯度值影响，各个权重的 decay 程度都是一样的。</p>
+<blockquote>
+<p>关于 <strong>Algorithm 2</strong> 中的第9 行和第 10 行，以前我知道是对梯度累计值和梯度平方累计值做一个修正，目的是使对二者的有偏估计变成无偏估计，但一直不理解为什么，现在看到一种解释：</p>
+<p>当 $t$ 足够大时，$\hat{\boldsymbol{m}}_t = \hat{\boldsymbol{m}}$。初始时刻 $t = 1$, $\beta_1 = 0.9$, $\hat{\boldsymbol{m}}_0 = 0$, $\hat{\boldsymbol{m}}_1 = 0.9 \cdot \hat{\boldsymbol{m}}_0 + 0.1 \cdot \hat{\boldsymbol{g}}_1 = 0.1 \cdot \boldsymbol{g}_1$，这显然不合理，但是除以 $1 - \beta_1^t = 1 - 0.9 = 0.1$ 后 $\hat{\boldsymbol{m}}_1 = \boldsymbol{g}_1$，这是比较合理的。对于第 10 行同理。</p>
+<p>这段理解来自 <a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/63982470">知乎：都9102年了，别再用Adam + L2 regularization了</a></p>
+</blockquote>
+<h2 id="实验"><span class="post-title-index">2. </span><a href="#实验" class="headerlink" title="实验"></a>实验</h2><h3 id="Adam-优化器上-decoupled-weight-decay-和-L2-正则化的对比"><span class="post-title-index">2.1. </span><a href="#Adam-优化器上-decoupled-weight-decay-和-L2-正则化的对比" class="headerlink" title="Adam 优化器上 decoupled weight decay 和 L2 正则化的对比"></a>Adam 优化器上 decoupled weight decay 和 L2 正则化的对比</h3><p>使用 decoupled weight decay 的方法称为 AdamW，使用 L2 正则化的方法就称为 Adam，使用了三种不同的学习率调整策略：（1）固定学习率；（2）阶梯下降（drop-step，不知如何翻译）的学习率；（3）余弦退火（cosine annealing）策略。对比图如下：</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/adam_damw.png" alt></p>
+<h3 id="Adam-优化器和-SGD-优化器的对比"><span class="post-title-index">2.2. </span><a href="#Adam-优化器和-SGD-优化器的对比" class="headerlink" title="Adam 优化器和 SGD 优化器的对比"></a>Adam 优化器和 SGD 优化器的对比</h3><p>整体对比图如下。文中提到，对于使用 L2 正则化的情况，两种优化器的最优超参数区域（basin）都是呈对角线的，这表明横纵坐标的两个超参数是相互依赖的，如果固定一个超参数而调整另一个，会使得结果恶化。而使用 decoupled weight decay 的情况下，最有超参数区域是与坐标轴平行的，这样两个超参数是独立的，可以固定一个调整另一个，仍然可以落在最优解区域内。</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/adam_sgd.png" alt></p>
+<h2 id="应用"><span class="post-title-index">3. </span><a href="#应用" class="headerlink" title="应用"></a>应用</h2><p>目前 BERT 训练采用的优化方法就是 AdamW，对除了 LayerNorm，bias 项之外的模型参数做 weight decay。</p>
+<p>根据我的理解，现在训练网络，优化器使用 AdamW，学习率调整机制可以使用 <a target="_blank" rel="noopener" href="https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.CosineAnnealingWarmRestarts.html">CosineAnnealingWarmupRestarts</a>，另外 <code>VilBERT</code> 工作中使用的是 <a target="_blank" rel="noopener" href="https://huggingface.co/transformers/v1.2.0/_modules/pytorch_transformers/optimization.html">WarmupLinearSchedule</a>。</p>
+<h2 id="参考文献"><span class="post-title-index">4. </span><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><blockquote id="fn_Hanson & Pratt (1988)">
+<sup>Hanson & Pratt (1988)</sup>. Hanson, Stephen, and Lorien Pratt. “Comparing biases for minimal network construction with back-propagation.” <em>Advances in neural information processing systems</em> 1 (1988): 177-185.<a href="#reffn_Hanson & Pratt (1988)" title="Jump back to footnote [Hanson & Pratt (1988)] in the text."> &#8617;</a>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E4%BC%98%E5%8C%96%E5%99%A8/" rel="tag"># 优化器</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/11/10/pytorch-hook/" rel="prev" title="PyTorch 中的 hook">
+      <i class="fa fa-chevron-left"></i> PyTorch 中的 hook
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/11/10/optimizer-scheduler/" rel="next" title="PyTorch 中的优化器和学习率调整机制">
+      PyTorch 中的优化器和学习率调整机制 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#SGD-%E5%92%8C-Adam-%E4%BC%98%E5%8C%96%E5%99%A8%E4%B8%AD%E7%9A%84-weight-decay-%E4%B8%8E-L2-%E6%AD%A3%E5%88%99%E5%8C%96"><span class="nav-text">1. SGD 和 Adam 优化器中的 weight decay 与 L2 正则化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E8%80%A6-SGD"><span class="nav-text">1.1. 解耦 SGD</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E8%80%A6-Adam"><span class="nav-text">1.2. 解耦 Adam</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C"><span class="nav-text">2. 实验</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Adam-%E4%BC%98%E5%8C%96%E5%99%A8%E4%B8%8A-decoupled-weight-decay-%E5%92%8C-L2-%E6%AD%A3%E5%88%99%E5%8C%96%E7%9A%84%E5%AF%B9%E6%AF%94"><span class="nav-text">2.1. Adam 优化器上 decoupled weight decay 和 L2 正则化的对比</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Adam-%E4%BC%98%E5%8C%96%E5%99%A8%E5%92%8C-SGD-%E4%BC%98%E5%8C%96%E5%99%A8%E7%9A%84%E5%AF%B9%E6%AF%94"><span class="nav-text">2.2. Adam 优化器和 SGD 优化器的对比</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BA%94%E7%94%A8"><span class="nav-text">3. 应用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">4. 参考文献</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="TimeOverflow"
+      src="/uploads/avatar.jpg">
+  <p class="site-author-name" itemprop="name">TimeOverflow</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">16</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/TimeOverflow" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;TimeOverflow" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:zhangz1220@outlook.com" title="E-Mail → mailto:zhangz1220@outlook.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">TimeOverflow</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">102k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">1:33</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'N3GrQmFE8RVjH8Sk6s4B7xnY-9Nh9j0Va',
+      appKey     : '4KwTSki3hoVvxnEwsxogPOKb',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : true,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
