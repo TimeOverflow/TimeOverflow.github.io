@@ -2,6 +2,15 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://timeoverflow.github.io/2022/01/11/paper-mocov1/</loc>
+    
+    <lastmod>2022-03-08</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
     <loc>https://timeoverflow.github.io/2022/03/08/migrate-blog/</loc>
     
     <lastmod>2022-03-08</lastmod>
@@ -104,15 +113,6 @@
     <loc>https://timeoverflow.github.io/2022/01/17/imagenet/</loc>
     
     <lastmod>2022-01-16</lastmod>
-    
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://timeoverflow.github.io/2022/01/11/paper-mocov1/</loc>
-    
-    <lastmod>2022-01-12</lastmod>
     
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
