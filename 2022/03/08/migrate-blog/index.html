@@ -22,19 +22,20 @@
     var CONFIG = {"hostname":"timeoverflow.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="本文用于记录常见的screen命令操作。">
+  <meta name="description" content="今天我需要将这个博客从一台电脑迁移到自己的电脑，即以后我就换一台电脑写博客了，之前那台电脑就不再使用了。我搜索了一下怎么解决这个问题，看到很多方法说的都是在 GitHub 上的仓库新建一个分支，然后 pull 到另一台电脑。这个方法我想应该是可行的，但并不完全符合我的要求，我希望今后自己这台电脑就作为主力机器了，之前的电脑上没必要还保留。这样如果前一台电脑还维持着 maser 分支，而现在的电脑却">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Screen命令的使用">
-<meta property="og:url" content="https://timeoverflow.github.io/2021/02/23/screen-usage/index.html">
+<meta property="og:title" content="如何迁移这个博客">
+<meta property="og:url" content="https://timeoverflow.github.io/2022/03/08/migrate-blog/index.html">
 <meta property="og:site_name" content="时间溢出的地方">
-<meta property="og:description" content="本文用于记录常见的screen命令操作。">
+<meta property="og:description" content="今天我需要将这个博客从一台电脑迁移到自己的电脑，即以后我就换一台电脑写博客了，之前那台电脑就不再使用了。我搜索了一下怎么解决这个问题，看到很多方法说的都是在 GitHub 上的仓库新建一个分支，然后 pull 到另一台电脑。这个方法我想应该是可行的，但并不完全符合我的要求，我希望今后自己这台电脑就作为主力机器了，之前的电脑上没必要还保留。这样如果前一台电脑还维持着 maser 分支，而现在的电脑却">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2021-02-23T11:27:09.000Z">
-<meta property="article:modified_time" content="2022-03-01T02:48:22.235Z">
+<meta property="article:published_time" content="2022-03-08T14:09:21.000Z">
+<meta property="article:modified_time" content="2022-03-08T15:17:38.730Z">
 <meta property="article:author" content="TimeOverflow">
+<meta property="article:tag" content="博客管理">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="https://timeoverflow.github.io/2021/02/23/screen-usage/">
+<link rel="canonical" href="https://timeoverflow.github.io/2022/03/08/migrate-blog/">
 
 
 <script id="page-configurations">
@@ -47,7 +48,7 @@
   };
 </script>
 
-  <title>Screen命令的使用 | 时间溢出的地方</title>
+  <title>如何迁移这个博客 | 时间溢出的地方</title>
   
 
 
@@ -165,7 +166,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://timeoverflow.github.io/2021/02/23/screen-usage/">
+    <link itemprop="mainEntityOfPage" href="https://timeoverflow.github.io/2022/03/08/migrate-blog/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/uploads/avatar.jpg">
@@ -178,7 +179,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          Screen命令的使用
+          如何迁移这个博客
         </h1>
 
         <div class="post-meta">
@@ -187,28 +188,22 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
+              
 
-              <time title="创建时间：2021-02-23 19:27:09" itemprop="dateCreated datePublished" datetime="2021-02-23T19:27:09+08:00">2021-02-23</time>
+              <time title="创建时间：2022-03-08 22:09:21 / 修改时间：23:17:38" itemprop="dateCreated datePublished" datetime="2022-03-08T22:09:21+08:00">2022-03-08</time>
             </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-03-01 10:48:22" itemprop="dateModified" datetime="2022-03-01T10:48:22+08:00">2022-03-01</time>
-              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+                  <a href="/categories/%E4%BA%BA%E7%94%9F%E7%BB%8F%E9%AA%8C-128056/" itemprop="url" rel="index"><span itemprop="name">人生经验&#128056;</span></a>
                 </span>
             </span>
 
           
-            <span id="/2021/02/23/screen-usage/" class="post-meta-item leancloud_visitors" data-flag-title="Screen命令的使用" title="阅读次数">
+            <span id="/2022/03/08/migrate-blog/" class="post-meta-item leancloud_visitors" data-flag-title="如何迁移这个博客" title="阅读次数">
               <span class="post-meta-item-icon">
                 <i class="fa fa-eye"></i>
               </span>
@@ -223,8 +218,8 @@
       </span>
       <span class="post-meta-item-text">Valine：</span>
     
-    <a title="valine" href="/2021/02/23/screen-usage/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2021/02/23/screen-usage/" itemprop="commentCount"></span>
+    <a title="valine" href="/2022/03/08/migrate-blog/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2022/03/08/migrate-blog/" itemprop="commentCount"></span>
     </a>
   </span>
   
@@ -234,14 +229,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>292</span>
+              <span>1.9k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
+              <span>2 分钟</span>
             </span>
 
         </div>
@@ -253,18 +248,32 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>本文用于记录常见的screen命令操作。</p>
-<span id="more"></span>
-<h2 id="创建screen会话并添加名字"><span class="post-title-index">1. </span><a href="#创建screen会话并添加名字" class="headerlink" title="创建screen会话并添加名字"></a>创建screen会话并添加名字</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">screen -S name</span><br></pre></td></tr></table></figure>
-<h2 id="查看当前会话"><span class="post-title-index">2. </span><a href="#查看当前会话" class="headerlink" title="查看当前会话"></a>查看当前会话</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">screen -ls</span><br></pre></td></tr></table></figure>
-<h2 id="离开当前screen"><span class="post-title-index">3. </span><a href="#离开当前screen" class="headerlink" title="离开当前screen"></a>离开当前screen</h2><p>按住<code>Ctrl+A</code>的同时，按<code>D</code></p>
-<h2 id="恢复screen"><span class="post-title-index">4. </span><a href="#恢复screen" class="headerlink" title="恢复screen"></a>恢复screen</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">screen -r &lt;id&gt;  # or</span><br><span class="line">screen -r name</span><br></pre></td></tr></table></figure>
-<h2 id="杀死一个已经detach的screen"><span class="post-title-index">5. </span><a href="#杀死一个已经detach的screen" class="headerlink" title="杀死一个已经detach的screen"></a>杀死一个已经detach的screen</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">screen -X -S &lt;session_id&gt; quit</span><br><span class="line"><span class="meta"># </span><span class="language-bash">an example:</span></span><br><span class="line">screen -X -S 4588 quit</span><br></pre></td></tr></table></figure>
-<h2 id="为screen添加log"><span class="post-title-index">6. </span><a href="#为screen添加log" class="headerlink" title="为screen添加log"></a>为screen添加log</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">screen -L -S name</span><br></pre></td></tr></table></figure>
-<h2 id="参考"><span class="post-title-index">7. </span><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ol>
-<li><a target="_blank" rel="noopener" href="https://www.jeeinn.com/2017/02/255/">Linux之screen创建、切换、记录屏幕日志</a></li>
-<li><a target="_blank" rel="noopener" href="https://nanxiao.me/kill-detached-screen-session/">如何杀死一个已经detached的screen会话</a></li>
+        <p>今天我需要将这个博客从一台电脑迁移到自己的电脑，即以后我就换一台电脑写博客了，之前那台电脑就不再使用了。我搜索了一下怎么解决这个问题，看到很多方法说的都是在 GitHub 上的仓库新建一个分支，然后 pull 到另一台电脑。这个方法我想应该是可行的，但并不完全符合我的要求，我希望今后自己这台电脑就作为主力机器了，之前的电脑上没必要还保留。这样如果前一台电脑还维持着 maser 分支，而现在的电脑却只能使用新的分支，显然是不合适的。</p>
+<p>当然我找到了解决办法，符合我需求的，参见这个链接：<a target="_blank" rel="noopener" href="https://showcc.github.io/2017/06/08/Change%20the%20computer%20update%20the%20hexo%20blog/">使用hexo，换了电脑怎么更新博客？</a></p>
+<p>另外我找到一个知乎链接，跟这个是一模一样的，我觉得有可能是抄的：<a target="_blank" rel="noopener" href="https://www.zhihu.com/question/21193762/answer/103097754">使用hexo，如果换了电脑怎么更新博客？ - skycrown的回答 - 知乎</a></p>
+<p>总之我解决了自己的问题，现在做一下大致记录，以便以后还要这样做的时候有个参考。</p>
+<h2 id="操作略述"><span class="post-title-index">1. </span><a href="#操作略述" class="headerlink" title="操作略述"></a>操作略述</h2><p>首先需要安装 NodeJS 和 hexo，这点不做赘述。</p>
+<p>今天安装的时候困扰了我很久的问题是网络连接问题导致一直安装不成功，直接将梯子设置为全局模式也是不行的，最后的解决办法是除了梯子要开全局，还要设置 npm 使用代理，用如下语句：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm config set proxy=&quot;http://127.0.0.1:10809&quot;</span><br></pre></td></tr></table></figure>
+<p>注意 http 代理的端口和 socks5 的端口的不一样的，我这里的端口是用 V2ray 服务的端口。</p>
+<p>安装完成后直接将原来电脑上的博客文件夹靠过来，并删除一些文件夹和文件，具体删除哪些，直接引用参考博客中的话：</p>
+<blockquote>
+<ol>
+<li>讨论下哪些文件是必须拷贝的：首先是之前自己修改的文件，像站点配置 <code>_config.yml</code>，<code>theme</code> 文件夹里面的主题，以及 <code>source</code> 里面自己写的博客文件，这些肯定要拷贝的。除此之外，还有三个文件需要有，就是 <code>scaffolds</code> 文件夹（文章的模板）、<code>package.json</code>（说明使用哪些包）和 <code>.gitignore</code>（限定在提交的时候哪些文件可以忽略）。其实，这三个文件不是我们修改的，所以即使丢失了，也没有关系，我们可以建立一个新的文件夹，然后在里面执行hexo init，就会生成这三个文件，我们只需要将它们拷贝过来使用即可。<br> 总结：<code>_config.yml</code>，<code>theme/</code>，<code>source/</code>，<code>scaffolds/</code>，<code>package.json</code>，<code>.gitignore</code>，是需要拷贝的。</li>
+<li>再讨论下哪些文件是不必拷贝的，或者说可以删除的：首先是 <code>.git文件</code>，无论是在站点根目录下，还是主题目录下的 <code>.git</code> 文件，都可以删掉。然后是文件夹 <code>node_modules</code>（在用npm install会重新生成），<code>public</code>（这个在用hexo g时会重新生成），<code>.deploy_git</code> 文件夹（在使用 <code>hexo d</code> 时也会重新生成），<code>db.json文件</code>。其实上面这些文件也就是是.gitignore文件里面记载的可以忽略的内容。<br> 总结：<code>.git/</code>，<code>node_modules/</code>，<code>public/</code>，<code>.deploy_git/</code>，<code>db.json文件</code>需要删除。</li>
 </ol>
+</blockquote>
+<p>补充一点：博客目录下可能会有一个 <code>package-lock.json</code> 文件，有的话也要删除。</p>
+<blockquote>
+<p>在新拷贝的文件夹里，右键选择 <code>git bash</code>，使用 <code>npm install</code> 命令，进行模块安装。<br>这里不要使用 <code>hexo init</code> 初始化，因为有的文件我们已经拷贝生成过来了，所以不必用 <code>hexo init</code> 去整体初始化，如果不慎在此时用了 <code>hexo init</code>，则站点的配置文件 <code>_config.yml</code> 里面内容会被清空使用默认值，所以这一步一定要慎重，不要用 <code>hexo init</code>。</p>
+</blockquote>
+<p>安装必要组件，主要是hexo 部署和站点地图：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-deployer-git --save</span><br><span class="line">npm install hexo-generator-sitemap --save</span><br></pre></td></tr></table></figure>
+<p>以上步骤完成后直接生成部署，就完成迁移了：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">hexo g</span><br><span class="line">hexo d</span><br></pre></td></tr></table></figure>
+<h2 id="上传时遇到的问题"><span class="post-title-index">2. </span><a href="#上传时遇到的问题" class="headerlink" title="上传时遇到的问题"></a>上传时遇到的问题</h2><p>今天上传的时候一直传不上去，用梯子也不行，最后解决办法是在博客目录下的 <code>_config.yml</code>（不是主题目录下的）里修改，大约在第 110 行左右：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Deployment</span></span><br><span class="line"><span class="comment">## Docs: https://hexo.io/docs/one-command-deployment</span></span><br><span class="line"><span class="attr">deploy:</span></span><br><span class="line">  <span class="attr">type:</span> <span class="string">git</span></span><br><span class="line">  <span class="attr">repo:</span></span><br><span class="line">    <span class="comment"># github: https://github.com/TimeOverflow/timeoverflow.github.io.git</span></span><br><span class="line">    <span class="string">git@github.com:TimeOverflow/timeoverflow.github.io.git</span></span><br><span class="line">  <span class="attr">branch:</span> <span class="string">master</span></span><br></pre></td></tr></table></figure>
+<p>原来用的是 https 协议，改成 git 协议就好了。</p>
 
     </div>
 
@@ -273,6 +282,9 @@
     
 
       <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%8D%9A%E5%AE%A2%E7%AE%A1%E7%90%86/" rel="tag"># 博客管理</a>
+          </div>
 
         
 
@@ -280,13 +292,10 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2021/02/12/VPS-GFW-guide/" rel="prev" title="WPS科学上网指南">
-      <i class="fa fa-chevron-left"></i> WPS科学上网指南
+    <a href="/2022/02/17/paper-mocov2/" rel="prev" title="论文阅读：Improved Baselines with Momentum Contrastive Learning">
+      <i class="fa fa-chevron-left"></i> 论文阅读：Improved Baselines with Momentum Contrastive Learning
     </a></div>
-      <div class="post-nav-item">
-    <a href="/2021/03/13/binary-tree-traversal/" rel="next" title="二叉树的深度优先遍历">
-      二叉树的深度优先遍历 <i class="fa fa-chevron-right"></i>
-    </a></div>
+      <div class="post-nav-item"></div>
     </div>
       </footer>
     
@@ -346,7 +355,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9B%E5%BB%BAscreen%E4%BC%9A%E8%AF%9D%E5%B9%B6%E6%B7%BB%E5%8A%A0%E5%90%8D%E5%AD%97"><span class="nav-text">1. 创建screen会话并添加名字</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9F%A5%E7%9C%8B%E5%BD%93%E5%89%8D%E4%BC%9A%E8%AF%9D"><span class="nav-text">2. 查看当前会话</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A6%BB%E5%BC%80%E5%BD%93%E5%89%8Dscreen"><span class="nav-text">3. 离开当前screen</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%81%A2%E5%A4%8Dscreen"><span class="nav-text">4. 恢复screen</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9D%80%E6%AD%BB%E4%B8%80%E4%B8%AA%E5%B7%B2%E7%BB%8Fdetach%E7%9A%84screen"><span class="nav-text">5. 杀死一个已经detach的screen</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BAscreen%E6%B7%BB%E5%8A%A0log"><span class="nav-text">6. 为screen添加log</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-text">7. 参考</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E7%95%A5%E8%BF%B0"><span class="nav-text">1. 操作略述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8A%E4%BC%A0%E6%97%B6%E9%81%87%E5%88%B0%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-text">2. 上传时遇到的问题</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
