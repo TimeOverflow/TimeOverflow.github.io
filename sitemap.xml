@@ -219,6 +219,13 @@
   </url>
   
   <url>
+    <loc>https://timeoverflow.github.io/tags/%E5%9B%BE%E7%BD%91%E7%BB%9C/</loc>
+    <lastmod>2022-03-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
     <loc>https://timeoverflow.github.io/tags/GradCAM/</loc>
     <lastmod>2022-03-08</lastmod>
     <changefreq>weekly</changefreq>
@@ -233,14 +240,14 @@
   </url>
   
   <url>
-    <loc>https://timeoverflow.github.io/tags/%E5%9B%BE%E7%BD%91%E7%BB%9C/</loc>
+    <loc>https://timeoverflow.github.io/tags/ImageNet/</loc>
     <lastmod>2022-03-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
-    <loc>https://timeoverflow.github.io/tags/ImageNet/</loc>
+    <loc>https://timeoverflow.github.io/tags/Linux/</loc>
     <lastmod>2022-03-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -255,13 +262,6 @@
   
   <url>
     <loc>https://timeoverflow.github.io/tags/backtrack/</loc>
-    <lastmod>2022-03-08</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://timeoverflow.github.io/tags/Linux/</loc>
     <lastmod>2022-03-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
