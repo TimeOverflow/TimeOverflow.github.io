@@ -2,6 +2,15 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://timeoverflow.github.io/2022/03/15/paper-byol/</loc>
+    
+    <lastmod>2022-03-15</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
     <loc>https://timeoverflow.github.io/2022/01/11/paper-mocov1/</loc>
     
     <lastmod>2022-03-08</lastmod>
@@ -184,7 +193,7 @@
 
   <url>
     <loc>https://timeoverflow.github.io/</loc>
-    <lastmod>2022-03-08</lastmod>
+    <lastmod>2022-03-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
@@ -192,119 +201,119 @@
   
   <url>
     <loc>https://timeoverflow.github.io/tags/%E7%A7%91%E5%AD%A6%E4%B8%8A%E7%BD%91/</loc>
-    <lastmod>2022-03-08</lastmod>
+    <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://timeoverflow.github.io/tags/VPS/</loc>
-    <lastmod>2022-03-08</lastmod>
+    <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://timeoverflow.github.io/tags/Batch-Normalization/</loc>
-    <lastmod>2022-03-08</lastmod>
+    <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://timeoverflow.github.io/tags/GradCAM/</loc>
-    <lastmod>2022-03-08</lastmod>
+    <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://timeoverflow.github.io/tags/%E5%8F%AF%E8%A7%A3%E9%87%8A%E6%80%A7/</loc>
-    <lastmod>2022-03-08</lastmod>
+    <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://timeoverflow.github.io/tags/%E4%BA%8C%E5%8F%89%E6%A0%91/</loc>
-    <lastmod>2022-03-08</lastmod>
+    <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://timeoverflow.github.io/tags/%E5%9B%BE%E7%BD%91%E7%BB%9C/</loc>
-    <lastmod>2022-03-08</lastmod>
+    <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://timeoverflow.github.io/tags/leetcode/</loc>
-    <lastmod>2022-03-08</lastmod>
+    <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://timeoverflow.github.io/tags/backtrack/</loc>
-    <lastmod>2022-03-08</lastmod>
+    <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://timeoverflow.github.io/tags/ImageNet/</loc>
-    <lastmod>2022-03-08</lastmod>
+    <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://timeoverflow.github.io/tags/%E4%BC%98%E5%8C%96%E5%99%A8/</loc>
-    <lastmod>2022-03-08</lastmod>
+    <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://timeoverflow.github.io/tags/PyTorch/</loc>
-    <lastmod>2022-03-08</lastmod>
+    <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://timeoverflow.github.io/tags/%E5%8D%9A%E5%AE%A2%E7%AE%A1%E7%90%86/</loc>
-    <lastmod>2022-03-08</lastmod>
+    <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://timeoverflow.github.io/tags/%E8%87%AA%E7%9B%91%E7%9D%A3%E5%AD%A6%E4%B9%A0/</loc>
-    <lastmod>2022-03-08</lastmod>
+    <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://timeoverflow.github.io/tags/Linux/</loc>
-    <lastmod>2022-03-08</lastmod>
+    <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://timeoverflow.github.io/tags/Pytorch-Hook/</loc>
-    <lastmod>2022-03-08</lastmod>
+    <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://timeoverflow.github.io/tags/%E6%94%AF%E6%8C%81%E5%90%91%E9%87%8F%E6%9C%BA/</loc>
-    <lastmod>2022-03-08</lastmod>
+    <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
@@ -313,63 +322,63 @@
   
   <url>
     <loc>https://timeoverflow.github.io/categories/%E4%BA%BA%E7%94%9F%E7%BB%8F%E9%AA%8C-128056/</loc>
-    <lastmod>2022-03-08</lastmod>
+    <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://timeoverflow.github.io/categories/ML-and-DL/</loc>
-    <lastmod>2022-03-08</lastmod>
+    <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://timeoverflow.github.io/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/</loc>
-    <lastmod>2022-03-08</lastmod>
+    <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://timeoverflow.github.io/categories/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/</loc>
-    <lastmod>2022-03-08</lastmod>
+    <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://timeoverflow.github.io/categories/leetcode%E7%AC%94%E8%AE%B0/</loc>
-    <lastmod>2022-03-08</lastmod>
+    <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://timeoverflow.github.io/categories/%E6%95%B0%E6%8D%AE%E9%9B%86/</loc>
-    <lastmod>2022-03-08</lastmod>
+    <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://timeoverflow.github.io/categories/PyTorch/</loc>
-    <lastmod>2022-03-08</lastmod>
+    <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://timeoverflow.github.io/categories/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/</loc>
-    <lastmod>2022-03-08</lastmod>
+    <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
     <loc>https://timeoverflow.github.io/categories/Linux/</loc>
-    <lastmod>2022-03-08</lastmod>
+    <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
