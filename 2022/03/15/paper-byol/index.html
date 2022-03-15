@@ -49,7 +49,7 @@
 <meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/202203142301812.png">
 <meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/202203151013951.jpg">
 <meta property="article:published_time" content="2022-03-15T02:07:47.000Z">
-<meta property="article:modified_time" content="2022-03-15T02:24:34.583Z">
+<meta property="article:modified_time" content="2022-03-15T02:29:46.005Z">
 <meta property="article:author" content="TimeOverflow">
 <meta property="article:tag" content="自监督学习">
 <meta name="twitter:card" content="summary">
@@ -210,7 +210,7 @@
               <span class="post-meta-item-text">发表于</span>
               
 
-              <time title="创建时间：2022-03-15 10:07:47 / 修改时间：10:24:34" itemprop="dateCreated datePublished" datetime="2022-03-15T10:07:47+08:00">2022-03-15</time>
+              <time title="创建时间：2022-03-15 10:07:47 / 修改时间：10:29:46" itemprop="dateCreated datePublished" datetime="2022-03-15T10:07:47+08:00">2022-03-15</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -279,7 +279,7 @@
 <p>本文的独特点在于不需要使用 negative pairs，但并不会带来 collapsed solution。文中表示因为不需要负样本，所以 BOLY 对data augmentation 的要求也没那么高（对比 SimCLR 和 Moco v2），在这一点上更加 roubust，同样，对 batch size 的大小要求也没那么高（对比 SimCLR）。</p>
 <p>文章 3. Method 开头两段话讲了本文想法的动机。作者说，如果 online network 和 target network 都根据梯度下降更新（如 SimCLR 那样），这种没有 negative pairs 的方法很容易就坍缩了，即两个网络不管输入是什么，都输出全 0 的向量，这样 loss 直接为 0 了。一个很直接的解决思路是让 target network 的权重随机初始化后直接 fix，只更新 online network，让其来预测 target network 的表示。作者做了这样的实验，发现这样效果并不好（但好于直接使用随机初始化权重的网络）。那既然不能直接固定住 target network，就让它也更新叭，又不能直接用梯度下降更新，那就打 online network 的主意了。因为 online network 一直是在更新的，我们有理由认为这样会使得 online network 对数据的特征表示越来越好，用 online network 的权重来缓慢更新 target network 的权重，这样可以提升 target network 的 representation 的 quality。这样一来，等于说我们用当前 online network 的输出来预测之前 online network 的输出，就有种自举的感觉了，也就是题目 bootstrap 的来源。</p>
 <h2 id="总体框架"><span class="post-title-index">2. </span><a href="#总体框架" class="headerlink" title="总体框架"></a>总体框架</h2><h3 id="方法介绍"><span class="post-title-index">2.1. </span><a href="#方法介绍" class="headerlink" title="方法介绍"></a>方法介绍</h3><p>本文的 flowchart 是很简洁的，通过下图可以一目了然：</p>
-<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/202203121551192.png" alt="image-20220312155148361" style="zoom:80%;"></p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/202203121551192.png" alt style="zoom:80%;"></p>
 <p>图中的 <code>sg</code> 是 stop gradient 的意思，也就是 $\xi$ 这一条网络不通过梯度下降更新，而是用动量法从 $\theta$ 那里更新的：</p>
 <script type="math/tex; mode=display">
 \xi \leftarrow \tau \xi+(1-\tau) \theta</script><p>$\theta$ 那一条通路里有个 projection head，这在 $\xi$ 那一条通路里是没有的，使得整个结构是非对称的。将 $q<em>\theta(z</em>\theta)$ 和 $z^\prime<em>\xi$ 分别归一化后计算 mean square error，即让 $\theta$ 这一路的表示来预测 $\xi$ 这一路的表示。文中记 $\overline{q</em>{\theta}}\left(z<em>{\theta}\right) \triangleq q</em>{\theta}\left(z<em>{\theta}\right) /\left|q</em>{\theta}\left(z<em>{\theta}\right)\right|</em>{2}$, $\bar{z}<em>{\xi}^{\prime} \triangleq z</em>{\xi}^{\prime} /\left|z<em>{\xi}^{\prime}\right|</em>{2}$，损失函数是这样写的：</p>
