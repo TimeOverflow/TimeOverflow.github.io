@@ -81,11 +81,7 @@
   </style>
 </noscript>
 
-<!-- hexo injector head_end start -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
-<!-- hexo injector head_end end --></head>
+</head>
 
 <body itemscope itemtype="http://schema.org/WebPage">
   <div class="container use-motion">
@@ -369,7 +365,7 @@ f(x)=\sum_{k} F(k) e^{i k x}=\sum_{k} \underbrace{\frac{1}{2 \pi} \int_{-\infty}
 <h3 id="图拉普拉斯算子"><span class="post-title-index">2.2. </span><a href="#图拉普拉斯算子" class="headerlink" title="图拉普拉斯算子"></a>图拉普拉斯算子</h3><p>为了将信息领域的傅里叶变换引申到图，即在图上做傅里叶变换，需要有对应的三种量：频率、正交基、傅里叶系数，如果在图处理时也能找到对应的这三个表示，就能把图信号转换到频域。为此，需要引入图拉普拉斯算子，即前面所说的拉普拉斯矩阵。将拉普拉斯矩阵做<strong>谱分解</strong>，得到特征值和相应的特征向量，特征值就对应于傅里叶变换中的频率，而特征向量就对应于这个频率下的基函数。</p>
 <p>现假设一张图$G$的结点数目为$n$，则其拉普拉斯矩阵为$L \in \mathbb{R}^{n \times n}$，则$L$是一个<strong>半正定实对称矩阵</strong>。</p>
 <hr>
-<p>对于任意给定的向量$\boldsymbol{x}$，拉普拉斯矩阵的二次型为：$\boldsymbol{x}^TL\boldsymbol{x} = \sum<em>{e</em>{ij} \in E}(x_i - x_j)^2 \geq 0$，所以拉普拉斯矩阵是一个半正定矩阵，其所有特征值都<strong>大于</strong>0。</p>
+<p>对于任意给定的向量$\boldsymbol{x}$，拉普拉斯矩阵的二次型为：$\boldsymbol{x}^TL\boldsymbol{x} = \sum_{e_{ij} \in E}(x_i - x_j)^2 \geq 0$，所以拉普拉斯矩阵是一个半正定矩阵，其所有特征值都<strong>大于</strong>0。</p>
 <hr>
 <p><strong>半正定实对称矩阵</strong>有如下的性质：</p>
 <ul>
@@ -466,7 +462,7 @@ f^{\prime \prime}(x)=\frac{\partial^{2} f(x)}{\partial x^{2}} &=f^{\prime}(x)-f^
 <script type="math/tex; mode=display">
 \boldsymbol{f}=\left(f_{1}, \ldots, f_{N}\right)</script><p>其中，$\boldsymbol{f}_i$表示函数在结点$i$的值（这里的$\boldsymbol{f}$就是上一节中用来表示图的向量$\boldsymbol{x}$）。</p>
 <p>对于任意结点$i$，对结点$i$进行微扰，它可能变为任意一个与之相邻的结点$j \in N_{i}$。</p>
-<p>前面提到，拉普拉斯算子就是在所有自由度上进行微小变化后获得的增益。对于图而言，从结点$i$变化到结点$j$增益是$f<em>j - f_i$，不过通常这里经常写作写作取负数的形式（无非就是$L=D-W$还是$W-D$的问题），即$f_i - f_j$。再考虑边的权重，可以认为增益是$W</em>{ij}(f_i - f_j)$，那么对于结点$i$，总的增益即为拉普拉斯算子在结点$i$处的值：</p>
+<p>前面提到，拉普拉斯算子就是在所有自由度上进行微小变化后获得的增益。对于图而言，从结点$i$变化到结点$j$增益是$f_j - f_i$，不过通常这里经常写作写作取负数的形式（无非就是$L=D-W$还是$W-D$的问题），即$f_i - f_j$。再考虑边的权重，可以认为增益是$W_{ij}(f_i - f_j)$，那么对于结点$i$，总的增益即为拉普拉斯算子在结点$i$处的值：</p>
 <script type="math/tex; mode=display">
 \begin{aligned}
 (\Delta \boldsymbol{f})_{i} &=\sum_{j} \frac{\partial f_{i}}{\partial j^{2}} \\
@@ -475,7 +471,7 @@ f^{\prime \prime}(x)=\frac{\partial^{2} f(x)}{\partial x^{2}} &=f^{\prime}(x)-f^
 &=\sum_{j} W_{i j} f_{i}-\sum_{j} W_{i j} f_{j} \\
 &=(\boldsymbol{D} \boldsymbol{f})_{i}-(\boldsymbol{W} \boldsymbol{f})_{i} \\
 &=[(\boldsymbol{D}-\boldsymbol{W}) \boldsymbol{f}]_{i}
-\end{aligned}</script><p>上式中$j \in N<em>i$去掉是因为对于非邻接点$W</em>{ij} = 0$。</p>
+\end{aligned}</script><p>上式中$j \in N_i$去掉是因为对于非邻接点$W_{ij} = 0$。</p>
 <p>对于任意结点$i$， 都有上述的结论。故</p>
 <script type="math/tex; mode=display">
 \Delta \boldsymbol{f}=(\boldsymbol{D}-\boldsymbol{W}) \boldsymbol{f}</script><p>注意上式中$\Delta \boldsymbol{f}$要看作一个整体，表示<strong>图拉普拉斯算子作用在由图结点信息构成的向量上得到的结果</strong>。</p>
@@ -495,15 +491,15 @@ L = D - A</script><p>也就是拉普拉斯矩阵。</p>
 <script type="math/tex; mode=display">
 (\boldsymbol{x} * \boldsymbol{h})_{\mathcal{G}}= U \operatorname{diag}(\boldsymbol{\tilde{h}}) U^{T} \boldsymbol{x}</script><h3 id="参考"><span class="post-title-index">2.5. </span><a href="#参考" class="headerlink" title="参考"></a>参考</h3><p><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzUyNzcyNzE0Mg==&amp;mid=2247499330&amp;idx=1&amp;sn=57100c1e9eedf9d0d7bdce9d12dfa636&amp;chksm=fa79910bcd0e181dc33a69ccc8c898ad5fe156cb50024b7126ffc711f4e4b39287fc58c45c85&amp;mpshare=1&amp;scene=23&amp;srcid=0407O2gdPSAUp3bT2dvzpX02&amp;sharer_sharetime=1617727979936&amp;sharer_shareid=58b77e8351334912d4df0e7eb150704a#rd">入门必读 | 图卷积神经网络理论基础：从傅里叶变换到图卷积</a></p>
 <p><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzU0ODk1MTcwNA==&amp;mid=2247484257&amp;idx=1&amp;sn=70ceb8cad8a091dd1c93aaca84b77d21&amp;chksm=fbb60096ccc18980ce324f5476d663d411f712765822635a20cb4c4f1ed209972ae5cbb54c6d&amp;token=350853886&amp;lang=zh_CN&amp;scene=21#wechat_redirect">图拉普拉斯算子为何定义为D-W</a></p>
-<h2 id="深度学习中的图卷积"><span class="post-title-index">3. </span><a href="#深度学习中的图卷积" class="headerlink" title="深度学习中的图卷积"></a>深度学习中的图卷积</h2><p>深度学习中的Convolution就是要设计含有trainable共享参数的kernel，上面公式中的卷积核$\boldsymbol{h}$（及其傅里叶变换$\boldsymbol{\tilde{h}}$）是事先已经设定好的，如果将卷积核的傅里叶变换直接设为$\operatorname{diag}\left[\theta<em>{1}, \ldots, \theta</em>{n}\right]$作为参数进行学习，就可以得到初步的GCN<sup><a href="#fn_1" id="reffn_1">1</a></sup>：</p>
+<h2 id="深度学习中的图卷积"><span class="post-title-index">3. </span><a href="#深度学习中的图卷积" class="headerlink" title="深度学习中的图卷积"></a>深度学习中的图卷积</h2><p>深度学习中的Convolution就是要设计含有trainable共享参数的kernel，上面公式中的卷积核$\boldsymbol{h}$（及其傅里叶变换$\boldsymbol{\tilde{h}}$）是事先已经设定好的，如果将卷积核的傅里叶变换直接设为$\operatorname{diag}\left[\theta_{1}, \ldots, \theta_{n}\right]$作为参数进行学习，就可以得到初步的GCN<sup><a href="#fn_1" id="reffn_1">1</a></sup>：</p>
 <script type="math/tex; mode=display">
-\boldsymbol{y}_{\text {output }}=\sigma\left(U \boldsymbol{g}_{\theta} U^{T} \boldsymbol{x}\right)=\sigma\left(U \operatorname{diag}\left[\theta_{1}, \ldots, \theta_{n}\right] U^{T} \boldsymbol{x}\right)</script><p>上式中，$\boldsymbol{x}$就是graph上对应于每个结点的feature构成的向量$\boldsymbol{x} = [x<em>1, x_2, \cdots, x_n]^T$，目前仍然是每个结点信息是标量（即单通道），后续推广到向量很方便（多通道）。$\boldsymbol{y}</em>{\text {output }}$是该图卷积后的输出，所有的结点都要经过该操作，得到各自的输出。再$\sigma$激活后，传入下一层。$\boldsymbol{g}<em>{\boldsymbol{\theta}}=\operatorname{diag}\left[\theta</em>{1}, \ldots, \theta_{n}\right]$相当于拿这个卷积核每个节点卷一遍。</p>
+\boldsymbol{y}_{\text {output }}=\sigma\left(U \boldsymbol{g}_{\theta} U^{T} \boldsymbol{x}\right)=\sigma\left(U \operatorname{diag}\left[\theta_{1}, \ldots, \theta_{n}\right] U^{T} \boldsymbol{x}\right)</script><p>上式中，$\boldsymbol{x}$就是graph上对应于每个结点的feature构成的向量$\boldsymbol{x} = [x_1, x_2, \cdots, x_n]^T$，目前仍然是每个结点信息是标量（即单通道），后续推广到向量很方便（多通道）。$\boldsymbol{y}_{\text {output }}$是该图卷积后的输出，所有的结点都要经过该操作，得到各自的输出。再$\sigma$激活后，传入下一层。$\boldsymbol{g}_{\boldsymbol{\theta}}=\operatorname{diag}\left[\theta_{1}, \ldots, \theta_{n}\right]$相当于拿这个卷积核每个节点卷一遍。</p>
 <blockquote id="fn_1">
 <sup>1</sup>. Bruna J, Zaremba W, Szlam A, et al. Spectral networks and locally connected networks on graphs[J]. arXiv preprint arXiv:1312.6203, 2013.<a href="#reffn_1" title="Jump back to footnote [1] in the text."> &#8617;</a>
 </blockquote>
 <h2 id="最初的图卷积网络（Graph-Convolution-Network）"><span class="post-title-index">4. </span><a href="#最初的图卷积网络（Graph-Convolution-Network）" class="headerlink" title="最初的图卷积网络（Graph Convolution Network）"></a>最初的图卷积网络（Graph Convolution Network）</h2><p><strong>GraphConv</strong>可以说是图卷积网络的开山之作。作者从谱卷积推导，给出的图卷积网络层的定义如下：</p>
 <script type="math/tex; mode=display">
-H^{(l+1)}=\sigma\left(\tilde{D}^{-\frac{1}{2}} \tilde{A} \tilde{D}^{-\frac{1}{2}} H^{(l)} W^{(l)}\right)</script><p>其中，$\tilde{A} = A + I$是加了自连接的无向图的邻接矩阵，相应地，$\tilde{D}<em>{ii} = \sum</em>{j}\tilde{A}_{ij}$，即$\tilde{D} = D + I$；$H^{(l)} \in \mathbb{R}^{N \times D}$是第$l$层的输出，$N$是图中结点的数量，$D$是结点的特征向量的长度，$H^{(0)} = X$；$W^{(l)} \in \mathbb{R}^{D \times F}$的第$l$层的权重，是网络中的可训练值；$\sigma(\cdot)$为激活函数。</p>
+H^{(l+1)}=\sigma\left(\tilde{D}^{-\frac{1}{2}} \tilde{A} \tilde{D}^{-\frac{1}{2}} H^{(l)} W^{(l)}\right)</script><p>其中，$\tilde{A} = A + I$是加了自连接的无向图的邻接矩阵，相应地，$\tilde{D}_{ii} = \sum_{j}\tilde{A}_{ij}$，即$\tilde{D} = D + I$；$H^{(l)} \in \mathbb{R}^{N \times D}$是第$l$层的输出，$N$是图中结点的数量，$D$是结点的特征向量的长度，$H^{(0)} = X$；$W^{(l)} \in \mathbb{R}^{D \times F}$的第$l$层的权重，是网络中的可训练值；$\sigma(\cdot)$为激活函数。</p>
 
     </div>
 

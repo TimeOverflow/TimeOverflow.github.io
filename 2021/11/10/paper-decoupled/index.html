@@ -84,11 +84,7 @@
   </style>
 </noscript>
 
-<!-- hexo injector head_end start -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
-<!-- hexo injector head_end end --></head>
+</head>
 
 <body itemscope itemtype="http://schema.org/WebPage">
   <div class="container use-motion">
@@ -286,7 +282,7 @@ f_{t}^{r e g}(\boldsymbol{\theta})=f_{t}(\boldsymbol{\theta})+\frac{\lambda^{\pr
 <p>当然从这个式子也可以看出，使用 L2 正则化代替 weight decay 时，L2 的系数如何选取，是跟学习率 $\alpha$ 有关的，这样这个系数跟学习率就是 coupled。比如说我想要设置大小为 $\lambda$ 的 weight decay 系数，现在的深度学习框架里都用 L2 正则化来代替，也就是要事先设置 L2 正则化系数，这个系数需要根据学习率的大小来设置，如果学习率的大小是变的，那就比较好设置；然而现在的学习率通常是变化的，这样设置了固定的 L2 正则化系数后，实际的 weight decay 系数也是在改变的。</p>
 <p>文章标题说 Decoupled Weight Decay Regularization，就是要把这个系数和学习率 decouple（解耦）。因此作者引入了下面的算法：</p>
 <p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/sdgw_algo.png" alt></p>
-<p>其中第 6 行是 L2 正则化算法，在计算梯度的时候就把正则项的导数加上，并根据这个导数计算动量，注意这一行里的 $\lambda$ 是 L2 正则化系数。解耦的方法是不在计算梯度的时候加上 L2 正则项，事实上压根就不用正则项，直接在第 9 行直接对 weight 进行 decay，即 $-\eta<em>t \lambda \boldsymbol{\theta}</em>{t-1}$，抛开 $\eta_t$ 不看，实际上就是 weight decay 的定义，第 12 行里的 $\lambda$ 是 weight decay 的系数。这样 weight decay 的系数和学习率就完全解耦（decouple）了。解耦后的 SGD 算法叫做 <strong>SGDW</strong> (<strong>SGD</strong> with decoupled <strong>W</strong>eight decay)。</p>
+<p>其中第 6 行是 L2 正则化算法，在计算梯度的时候就把正则项的导数加上，并根据这个导数计算动量，注意这一行里的 $\lambda$ 是 L2 正则化系数。解耦的方法是不在计算梯度的时候加上 L2 正则项，事实上压根就不用正则项，直接在第 9 行直接对 weight 进行 decay，即 $-\eta_t \lambda \boldsymbol{\theta}_{t-1}$，抛开 $\eta_t$ 不看，实际上就是 weight decay 的定义，第 12 行里的 $\lambda$ 是 weight decay 的系数。这样 weight decay 的系数和学习率就完全解耦（decouple）了。解耦后的 SGD 算法叫做 <strong>SGDW</strong> (<strong>SGD</strong> with decoupled <strong>W</strong>eight decay)。</p>
 <p>需要说明的这里的 $\eta_t$，是用于调整学习率的，调整学习率不是直接对 $\alpha$ 本身做调整（这个 $\alpha$ 是初始学习率，设定之后就不再变动了），但是每个 step 使用学习率的时候，都会给它乘以一个数 $\eta_t$（文中称其为 multiplier），通过 $\operatorname{SetScheduleMultiplier}$ 函数调整每个 step 的 $\eta_t$，从而间接起到调整实际学习率的效果。</p>
 <h3 id="解耦-Adam"><span class="post-title-index">1.2. </span><a href="#解耦-Adam" class="headerlink" title="解耦 Adam"></a>解耦 Adam</h3><p>命题 1 证明了对于 SGD 优化器，使用 weight decay 等价于使用 L2 正则化。作者提出对于自适应优化器（不止 Adam，AdaGrad, RMSProp 等也是），weight decay 与 L2 正则化不等价，因此实际上不能用 L2 正则化来代替 weight decay。</p>
 <p><strong>Proposition 2:</strong> 对于自适应梯度优化器， weight decay 与 L2 正则化不等价。设对于优化器 $O$，其不带 weight decay 的梯度迭代公式为：</p>
@@ -294,13 +290,13 @@ f_{t}^{r e g}(\boldsymbol{\theta})=f_{t}(\boldsymbol{\theta})+\frac{\lambda^{\pr
 \boldsymbol{\theta}_{t+1} \leftarrow \boldsymbol{\theta}_{t}-\alpha \mathbf{M}_{t} \nabla f_{t}\left(\boldsymbol{\theta}_{t}\right) \,.</script><p>带 weight decay 的迭代公式为：</p>
 <script type="math/tex; mode=display">
 \boldsymbol{\theta}_{t+1} \leftarrow(1-\lambda) \boldsymbol{\theta}_{t}-\alpha \mathbf{M}_{t} \nabla f_{t}\left(\boldsymbol{\theta}_{t}\right) \,,</script><p>因为优化器是自适应的，显然 $\mathbf{M}_{t} \neq k \mathbf{I}$ (where $\left.k \in \mathbb{R}\right)$。</p>
-<p>仿照 SGD中的，现在想用在损失函数 $f<em>t$ 上再加 L2 正则化来代替 weight decay，即用 $f</em>{t}^{r e g}(\boldsymbol{\theta})=f<em>{t}(\boldsymbol{\theta})+\frac{\lambda^{\prime}}{2}|\boldsymbol{\theta}|</em>{2}^{2}$ 来代替 $\boldsymbol{\theta}<em>{t+1} \leftarrow \boldsymbol{\theta}</em>{t}-\alpha \mathbf{M}<em>{t} \nabla f</em>{t}\left(\boldsymbol{\theta}_{t}\right)$ 中的 $f_t$，使得这个迭代公式与带 weight decay 的迭代公式等价。然而这样的 L2 正则化系数 $\lambda^{\prime}$ 是不存在的。</p>
+<p>仿照 SGD中的，现在想用在损失函数 $f_t$ 上再加 L2 正则化来代替 weight decay，即用 $f_{t}^{r e g}(\boldsymbol{\theta})=f_{t}(\boldsymbol{\theta})+\frac{\lambda^{\prime}}{2}|\boldsymbol{\theta}|_{2}^{2}$ 来代替 $\boldsymbol{\theta}_{t+1} \leftarrow \boldsymbol{\theta}_{t}-\alpha \mathbf{M}_{t} \nabla f_{t}\left(\boldsymbol{\theta}_{t}\right)$ 中的 $f_t$，使得这个迭代公式与带 weight decay 的迭代公式等价。然而这样的 L2 正则化系数 $\lambda^{\prime}$ 是不存在的。</p>
 <p>证明如下：</p>
 <p>对使用 L2 正则化的式子求导，得：</p>
 <script type="math/tex; mode=display">
 \boldsymbol{\theta}_{t+1} \leftarrow \boldsymbol{\theta}_{t}-\alpha \lambda^{\prime} \mathbf{M}_{t} \boldsymbol{\theta}_{t}-\alpha \mathbf{M}_{t} \nabla f_{t}\left(\boldsymbol{\theta}_{t}\right) \,.</script><p>如果要使这个式子与带 weight decay 的迭代公式等价，则要求满足</p>
 <script type="math/tex; mode=display">
-\lambda \boldsymbol{\theta}_{t}=\alpha \lambda^{\prime} \mathbf{M}_{t} \boldsymbol{\theta}_{t} \,.</script><p>为了满足上式，需要对于所有 step 的 $\boldsymbol{\theta}<em>t$ 存在 $\mathbf{M}</em>{t}=k \mathbf{I}$，其中 $k \in \mathbb{R}$。而根据前提条件，这个是无法满足的。</p>
+\lambda \boldsymbol{\theta}_{t}=\alpha \lambda^{\prime} \mathbf{M}_{t} \boldsymbol{\theta}_{t} \,.</script><p>为了满足上式，需要对于所有 step 的 $\boldsymbol{\theta}_t$ 存在 $\mathbf{M}_{t}=k \mathbf{I}$，其中 $k \in \mathbb{R}$。而根据前提条件，这个是无法满足的。</p>
 <p>因此不存在 L2 正则化系数 $\lambda^\prime$ 使得在自适应优化器上 L2 正则化等价于 weight decay。</p>
 <p>对于 Adam 优化器，作者同样提出解耦 weight decay 的系数，而不是使用 L2 正则化，如下面的算法流程所示。</p>
 <p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/adamw_algo.png" alt></p>
@@ -312,7 +308,7 @@ f_{t}^{r e g}(\boldsymbol{\theta})=f_{t}(\boldsymbol{\theta})+\frac{\lambda^{\pr
 &= \boldsymbol{\theta}_{t-1} - \eta_t \alpha \frac{\boldsymbol{m}_t / (1-\beta^t_1)}{\sqrt{\hat{\boldsymbol{v}}_{t}}+\epsilon} \\
 &= \boldsymbol{\theta}_{t-1} - \eta_t \alpha \frac{\beta_{1} \boldsymbol{m}_{t-1}+\left(1-\beta_{1}\right) \boldsymbol{g}_{t}}{(1-\beta^t_1)(\sqrt{\hat{\boldsymbol{v}}_{t}}+\epsilon)} \\
 &= \boldsymbol{\theta}_{t-1} - \eta_t \alpha \frac{\beta_{1} \boldsymbol{m}_{t-1}+\left(1-\beta_{1}\right) (\nabla f_{t}\left(\boldsymbol{\theta}_{t-1}\right)+\lambda \boldsymbol{\theta}_{t-1})}{(1-\beta^t_1)(\sqrt{\hat{\boldsymbol{v}}_{t}}+\epsilon)} \,.
-\end{align}</script><p>看右上角的 $\lambda \boldsymbol{\theta}<em>{t-1}$，这应该是起到 weight decay 作用的，但它的实际作用受到分母项 $\sqrt{\hat{\boldsymbol{v}}_t}$ 的影响，$\sqrt{\hat{\boldsymbol{v}}_t}$ 有更大的值，就会使调整后的 $\frac{\lambda \boldsymbol{\theta}</em>{t-1}}{\sqrt{\hat{\boldsymbol{v}}_{t}}}$ 更小，在这个方向上 $\boldsymbol{\theta}$ 被正则化地更少，这是不合理的。而使用解耦后的公式，weight decay 就不会收到积累的历史梯度值影响，各个权重的 decay 程度都是一样的。</p>
+\end{align}</script><p>看右上角的 $\lambda \boldsymbol{\theta}_{t-1}$，这应该是起到 weight decay 作用的，但它的实际作用受到分母项 $\sqrt{\hat{\boldsymbol{v}}_t}$ 的影响，$\sqrt{\hat{\boldsymbol{v}}_t}$ 有更大的值，就会使调整后的 $\frac{\lambda \boldsymbol{\theta}_{t-1}}{\sqrt{\hat{\boldsymbol{v}}_{t}}}$ 更小，在这个方向上 $\boldsymbol{\theta}$ 被正则化地更少，这是不合理的。而使用解耦后的公式，weight decay 就不会收到积累的历史梯度值影响，各个权重的 decay 程度都是一样的。</p>
 <blockquote>
 <p>关于 <strong>Algorithm 2</strong> 中的第9 行和第 10 行，以前我知道是对梯度累计值和梯度平方累计值做一个修正，目的是使对二者的有偏估计变成无偏估计，但一直不理解为什么，现在看到一种解释：</p>
 <p>当 $t$ 足够大时，$\hat{\boldsymbol{m}}_t = \hat{\boldsymbol{m}}$。初始时刻 $t = 1$, $\beta_1 = 0.9$, $\hat{\boldsymbol{m}}_0 = 0$, $\hat{\boldsymbol{m}}_1 = 0.9 \cdot \hat{\boldsymbol{m}}_0 + 0.1 \cdot \hat{\boldsymbol{g}}_1 = 0.1 \cdot \boldsymbol{g}_1$，这显然不合理，但是除以 $1 - \beta_1^t = 1 - 0.9 = 0.1$ 后 $\hat{\boldsymbol{m}}_1 = \boldsymbol{g}_1$，这是比较合理的。对于第 10 行同理。</p>

@@ -99,11 +99,7 @@
   </style>
 </noscript>
 
-<!-- hexo injector head_end start -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
-<!-- hexo injector head_end end --></head>
+</head>
 
 <body itemscope itemtype="http://schema.org/WebPage">
   <div class="container use-motion">
@@ -286,23 +282,23 @@
 <p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/202203121551192.png" alt style="zoom:80%;"></p>
 <p>图中的 <code>sg</code> 是 stop gradient 的意思，也就是 $\xi$ 这一条网络不通过梯度下降更新，而是用动量法从 $\theta$ 那里更新的：</p>
 <script type="math/tex; mode=display">
-\xi \leftarrow \tau \xi+(1-\tau) \theta</script><p>$\theta$ 那一条通路里有个 projection head，这在 $\xi$ 那一条通路里是没有的，使得整个结构是非对称的。将 $q<em>{\theta}(z</em>{\theta})$ 和 $z^\prime<em>{\xi}$ 分别归一化后计算 mean square error，即让 $\theta$ 这一路的表示来预测 $\xi$ 这一路的表示。文中记 $\overline{q</em>{\theta}}\left(z<em>{\theta}\right) \triangleq q</em>{\theta}\left(z<em>{\theta}\right) /\left|q</em>{\theta}\left(z<em>{\theta}\right)\right|</em>{2}$, $\bar{z}<em>{\xi}^{\prime} \triangleq z</em>{\xi}^{\prime} /\left|z<em>{\xi}^{\prime}\right|</em>{2}$，损失函数是这样写的：</p>
+\xi \leftarrow \tau \xi+(1-\tau) \theta</script><p>$\theta$ 那一条通路里有个 projection head，这在 $\xi$ 那一条通路里是没有的，使得整个结构是非对称的。将 $q_{\theta}(z_{\theta})$ 和 $z^\prime_{\xi}$ 分别归一化后计算 mean square error，即让 $\theta$ 这一路的表示来预测 $\xi$ 这一路的表示。文中记 $\overline{q_{\theta}}\left(z_{\theta}\right) \triangleq q_{\theta}\left(z_{\theta}\right) /\left|q_{\theta}\left(z_{\theta}\right)\right|_{2}$, $\bar{z}_{\xi}^{\prime} \triangleq z_{\xi}^{\prime} /\left|z_{\xi}^{\prime}\right|_{2}$，损失函数是这样写的：</p>
 <script type="math/tex; mode=display">
-\mathcal{L}_{\theta, \xi} \triangleq\left\|\overline{q_{\theta}}\left(z_{\theta}\right)-\bar{z}_{\xi}^{\prime}\right\|_{2}^{2}=2-2 \cdot \frac{\left\langle q_{\theta}\left(z_{\theta}\right), z_{\xi}^{\prime}\right\rangle}{\left\|q_{\theta}\left(z_{\theta}\right)\right\|_{2} \cdot\left\|z_{\xi}^{\prime}\right\|_{2}}</script><p>这个等式成立的原因是 $\Vert a \Vert<em>2^2 = <a, a>$，其中 $<a, a> = a \cdot a$，也就是向量的点乘。为了简化，记 $a = q</a,></a,></em>{\theta}\left(z<em>{\theta}\right)$, $\overline{a} =  \overline{q</em>{\theta}}\left(z<em>{\theta}\right)$, $b = z</em>{\xi}^{\prime}$, $\overline{b} = \bar{z}_{\xi}^{\prime}$，则：</p>
+\mathcal{L}_{\theta, \xi} \triangleq\left\|\overline{q_{\theta}}\left(z_{\theta}\right)-\bar{z}_{\xi}^{\prime}\right\|_{2}^{2}=2-2 \cdot \frac{\left\langle q_{\theta}\left(z_{\theta}\right), z_{\xi}^{\prime}\right\rangle}{\left\|q_{\theta}\left(z_{\theta}\right)\right\|_{2} \cdot\left\|z_{\xi}^{\prime}\right\|_{2}}</script><p>这个等式成立的原因是 $\Vert a \Vert_2^2 = <a, a>$，其中 $<a, a> = a \cdot a$，也就是向量的点乘。为了简化，记 $a = q_{\theta}\left(z_{\theta}\right)$, $\overline{a} =  \overline{q_{\theta}}\left(z_{\theta}\right)$, $b = z_{\xi}^{\prime}$, $\overline{b} = \bar{z}_{\xi}^{\prime}$，则：</a,></a,></p>
 <script type="math/tex; mode=display">
 \begin{aligned}
 \Vert \overline{a} - \overline{b} \Vert_2^2 &= <\overline{a} - \overline{b}, \overline{a} - \overline{b}> \\
 &= <\frac{a}{\Vert a \Vert_2} - \frac{b}{\Vert b \Vert_2}, \frac{a}{\Vert a \Vert_2} - \frac{b}{\Vert b \Vert_2}> \\
 &= \frac{<a,a>}{\Vert a \Vert_2^2} + \frac{<b,b>}{\Vert b \Vert_2^2} - 2\cdot\frac{<a, b>}{\Vert a \Vert_2 \Vert b \Vert_2} \\
 &= 2 - 2\cdot\frac{<a, b>}{\Vert a \Vert_2 \cdot \Vert b \Vert_2}
-\end{aligned}</script><p>上面这个 $\mathcal{L}<em>{\theta,\xi}$ 是将 $v$ 通过 online network，$v^\prime$ 通过 target network 生成特征在计算损失；接下来还要做一个将 $v^\prime$ 通过 online network，$v$ 通过 target network 生成特征在计算损失，得到 $\widetilde{\mathcal{L}}</em>{\theta, \xi}$。也就是说，既要让 $v$ 来预测 $v^\prime$ 的特征，又要让 $v^\prime$ 来预测 $v$ 的特征。最后的损失函数是二者相加，得 $\mathcal{L}<em>{\theta, \xi}^{\mathrm{BYOL}}=\mathcal{L}</em>{\theta, \xi}+\widetilde{\mathcal{L}}_{\theta, \xi}$。online network 的参数由梯度下降更新：</p>
+\end{aligned}</script><p>上面这个 $\mathcal{L}_{\theta,\xi}$ 是将 $v$ 通过 online network，$v^\prime$ 通过 target network 生成特征在计算损失；接下来还要做一个将 $v^\prime$ 通过 online network，$v$ 通过 target network 生成特征在计算损失，得到 $\widetilde{\mathcal{L}}_{\theta, \xi}$。也就是说，既要让 $v$ 来预测 $v^\prime$ 的特征，又要让 $v^\prime$ 来预测 $v$ 的特征。最后的损失函数是二者相加，得 $\mathcal{L}_{\theta, \xi}^{\mathrm{BYOL}}=\mathcal{L}_{\theta, \xi}+\widetilde{\mathcal{L}}_{\theta, \xi}$。online network 的参数由梯度下降更新：</p>
 <script type="math/tex; mode=display">
 \theta \leftarrow \operatorname{optimizer}\left(\theta, \nabla_{\theta} \mathcal{L}_{\theta, \xi}^{\mathrm{BYOL}}, \eta\right)</script><h3 id="实现细节"><span class="post-title-index">2.2. </span><a href="#实现细节" class="headerlink" title="实现细节"></a>实现细节</h3><p>数据增强方法用的跟 SimCLR 类似，但感觉更复杂，直接引用原文：</p>
 <blockquote>
 <p>First, a random patch of the image is selected and resized to 224 × 224 with a random horizontal flip, followed by a color distortion, consisting of a random sequence of brightness, contrast, saturation, hue adjustments, and an optional grayscale conversion. Finally Gaussian blur and solarization are applied to the patches.  </p>
 </blockquote>
 <p>网络结构方面，最基础的版本是 ResNet-50，也用了更深、更宽的 ResNet 做实验。本文的 projection head 和 prediction head 使用的都是一样的 MLP 结构：Linear (2048 to 4096) — BN — ReLU — Linear (4096 to 256)。作者特意提到，Contrary to SimCLR, the output of this MLP is not batch normalized 。但我在 SimCLR 文中没看到提及 projection head 使用了 BN，在这份<a target="_blank" rel="noopener" href="https://github.com/sthalles/SimCLR/blob/master/models/resnet_simclr.py">实现代码</a>中也没看到用 BN（最新：在<a target="_blank" rel="noopener" href="https://github.com/google-research/simclr/blob/master/tf2/model.py">官方代码</a>中看到使用 BN 了）。关于 BOYL 中使用 BN 引起了很多讨论，后文会再做一个分析。</p>
-<p>优化器使用的是 LARS，学习率策略使用的是 cosine decay without restarts，训练超过 1000 epochs，其中 10 个 epoch 来 warm up。学习率为 $0.2 \times \operatorname{BatchSize}/256$，weight decay  设为 $1.5 \times 10^{-6}$。对于 target network 权重动量更新的 $\tau$，设置从初始的 $\tau<em>{\operatorname{base}}=0.996$ 逐渐增大到 1，具体来说，其策略为 $\tau \triangleq 1-\left(1-\tau</em>{\text {base }}\right) \cdot(\cos (\pi k / K)+1) / 2$，其中 $k$ 是 training step，$K$ 是一个 epoch 的最大步数。训练使用的 batch size 是 4096。</p>
+<p>优化器使用的是 LARS，学习率策略使用的是 cosine decay without restarts，训练超过 1000 epochs，其中 10 个 epoch 来 warm up。学习率为 $0.2 \times \operatorname{BatchSize}/256$，weight decay  设为 $1.5 \times 10^{-6}$。对于 target network 权重动量更新的 $\tau$，设置从初始的 $\tau_{\operatorname{base}}=0.996$ 逐渐增大到 1，具体来说，其策略为 $\tau \triangleq 1-\left(1-\tau_{\text {base }}\right) \cdot(\cos (\pi k / K)+1) / 2$，其中 $k$ 是 training step，$K$ 是一个 epoch 的最大步数。训练使用的 batch size 是 4096。</p>
 <p>下面是附录里给出的算法流程：</p>
 <p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/202203122317715.png" alt="image-20220312231729520" style="zoom:80%;"></p>
 <h2 id="实验结果"><span class="post-title-index">3. </span><a href="#实验结果" class="headerlink" title="实验结果"></a>实验结果</h2><h3 id="Linear-evaluation-on-ImageNet"><span class="post-title-index">3.1. </span><a href="#Linear-evaluation-on-ImageNet" class="headerlink" title="Linear evaluation on ImageNet"></a>Linear evaluation on ImageNet</h3><p>使用 linear probe 测试学到的表示在 ImageNet 测试集上的分类准确率：</p>
@@ -323,7 +319,7 @@
 <script type="math/tex; mode=display">
 \xi \leftarrow \tau \xi+(1-\tau) \theta</script><p>$\tau = 0$ 时，target network 完全跟着 online network，这时候就容易学到 trivial solution，造成模型坍缩；$\tau = 1$ 时，target network 从来不更新，这样也会带来下降。具体的 $\tau$ 值对效果的影响如下（表中数据是 ImageNet 上的 top-1 accuracy）：</p>
 <p><img src="C:/Users/Zhao Zhang/AppData/Roaming/Typora/typora-user-images/image-20220312230441849.png" alt="image-20220312230441849"></p>
-<p>这个表里给的是 $\tau<em>{\text{base}}$，前面提到，$\tau$ 的更新是根据 $\tau</em>{\text{base}}$ 来的：$\tau \triangleq 1-\left(1-\tau<em>{\text {base }}\right) \cdot(\cos (\pi k / K)+1) / 2$。所以当 $\tau</em>{\text{base}}=1$ 时，$\tau = 1$，即 target network 从不更新。当 $\tau_{\text{base}}=0$ 时，根据公式 $\tau$ 不一直等于 0，所以这里加了个注释说 $\tau$ 在训练中就恒定设为 0 了。</p>
+<p>这个表里给的是 $\tau_{\text{base}}$，前面提到，$\tau$ 的更新是根据 $\tau_{\text{base}}$ 来的：$\tau \triangleq 1-\left(1-\tau_{\text {base }}\right) \cdot(\cos (\pi k / K)+1) / 2$。所以当 $\tau_{\text{base}}=1$ 时，$\tau = 1$，即 target network 从不更新。当 $\tau_{\text{base}}=0$ 时，根据公式 $\tau$ 不一直等于 0，所以这里加了个注释说 $\tau$ 在训练中就恒定设为 0 了。</p>
 <p>另外还有一些其他的 ablations，我这里就不写了。</p>
 <h2 id="后续讨论"><span class="post-title-index">5. </span><a href="#后续讨论" class="headerlink" title="后续讨论"></a>后续讨论</h2><h3 id="一个博客的观点"><span class="post-title-index">5.1. </span><a href="#一个博客的观点" class="headerlink" title="一个博客的观点"></a>一个博客的观点</h3><p>这篇 <a target="_blank" rel="noopener" href="https://generallyintelligent.ai/blog/2020-08-24-understanding-self-supervised-contrastive-learning/">来自 untitled-ai 的博客</a> 在复现 BYOL 代码的时候得出两个观点：</p>
 <ol>

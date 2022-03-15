@@ -82,11 +82,7 @@
   </style>
 </noscript>
 
-<!-- hexo injector head_end start -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
-<!-- hexo injector head_end end --></head>
+</head>
 
 <body itemscope itemtype="http://schema.org/WebPage">
   <div class="container use-motion">
@@ -272,15 +268,15 @@
 <p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/bn_network.png" alt></p>
 <p>网络第一层的输入$x$到输出经过以下步骤：</p>
 <ol>
-<li><p>$x$先经矩阵$W<em>{h_1}$线性变换得到$s_1$，因为后面减去batch的平均值$\mu_B$ 后，偏置$b</em>{h<em>1}$的作用会被抵消掉，所以没必要加入$b</em>{h_1}$（红色删除线）</p>
+<li><p>$x$先经矩阵$W_{h_1}$线性变换得到$s_1$，因为后面减去batch的平均值$\mu_B$ 后，偏置$b_{h_1}$的作用会被抵消掉，所以没必要加入$b_{h_1}$（红色删除线）</p>
 </li>
-<li><p>对$s<em>1$做normalization，先减去当前batch的均值$\mu_B$，再除以标准差$\sqrt{\sigma</em>{B}^{2} + \epsilon}$，其中$\epsilon$是为了避免除数为0的情况所使用的微小正数，可以设置为$1 \times 10^{-7}$或$1 \times 10 ^ {-8}$</p>
+<li><p>对$s_1$做normalization，先减去当前batch的均值$\mu_B$，再除以标准差$\sqrt{\sigma_{B}^{2} + \epsilon}$，其中$\epsilon$是为了避免除数为0的情况所使用的微小正数，可以设置为$1 \times 10^{-7}$或$1 \times 10 ^ {-8}$</p>
 <p>均值和标准差计算公式为：</p>
 <ul>
-<li>$\mu<em>B = \frac{1}{m} \sum</em>{i=1}^{m}s<em>{1i} = \frac{1}{m} \sum</em>{i=1}^{m}W_{h_1}x_i$</li>
-<li>$\sigma<em>{B}^{2} = \frac{1}{m}\sum</em>{i=1}^{m}(s_{1i} - \mu_B)^2$</li>
+<li>$\mu_B = \frac{1}{m} \sum_{i=1}^{m}s_{1i} = \frac{1}{m} \sum_{i=1}^{m}W_{h_1}x_i$</li>
+<li>$\sigma_{B}^{2} = \frac{1}{m}\sum_{i=1}^{m}(s_{1i} - \mu_B)^2$</li>
 </ul>
-<p>这样得到$s<em>2 = \frac{s_1 - \mu_B}{\sqrt{\sigma</em>{B}^{2} + \epsilon}}$，现在$s_2$基本会被限制在均值为0，标准差为1的情况下，即符合正态分布，这会使得网络的表达能力下降</p>
+<p>这样得到$s_2 = \frac{s_1 - \mu_B}{\sqrt{\sigma_{B}^{2} + \epsilon}}$，现在$s_2$基本会被限制在均值为0，标准差为1的情况下，即符合正态分布，这会使得网络的表达能力下降</p>
 <p>（<strong>为什么网络的表达能力下降了？</strong>因为如果网络层都用BN，就相当于把网络的非线性函数都用线性函数代替了，而多个线性层与一个线性层效果是等价的，这就降低了网络的非线性，使得网络的表达能力下降。）</p>
 <p>所以BN为了保证非线性的获得，引入两个新的parameters：$\gamma$和$\beta$，这两个参数是网络自己学习得到的。通过scale和shift把这个值从标准正态分布左移或者右移一点并长胖一点或者变瘦一点，每个实例挪动的程度不一样，这样等价于非线性函数的值从正中心周围的线性区往非线性区动了动。核心思想应该是想找到一个线性和非线性的较好平衡点，既能享受非线性的较强表达能力的好处，又避免太靠非线性区两头使得网络收敛速度太慢</p>
 </li>

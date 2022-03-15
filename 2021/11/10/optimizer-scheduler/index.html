@@ -91,11 +91,7 @@
   </style>
 </noscript>
 
-<!-- hexo injector head_end start -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
-<!-- hexo injector head_end end --></head>
+</head>
 
 <body itemscope itemtype="http://schema.org/WebPage">
   <div class="container use-motion">
@@ -391,7 +387,7 @@
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, </span><br><span class="line">                                           T_max, </span><br><span class="line">                                           eta_min=<span class="number">0</span>, </span><br><span class="line">                                           last_epoch=- <span class="number">1</span>, </span><br><span class="line">                                           verbose=<span class="literal">False</span>)</span><br></pre></td></tr></table></figure>
 <p>官方文档给了一个公式说明，但看得不是很明白：</p>
 <p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/pytorch_cosine_annealing2.png" alt></p>
-<p>其中的 $\eta<em>{max}$ 就是优化器的<strong>初始学习率</strong>，是整个学习率调整过程中余弦值的峰值，$\eta</em>{min}$ 是最小学习率，手动设置，默认为 0，是余弦值的谷底值。$T_{max}$ 其实就是余弦函数的<strong>半周期值</strong>。该调整方法对学习率的改变可以做个图看看，代码为：</p>
+<p>其中的 $\eta_{max}$ 就是优化器的<strong>初始学习率</strong>，是整个学习率调整过程中余弦值的峰值，$\eta_{min}$ 是最小学习率，手动设置，默认为 0，是余弦值的谷底值。$T_{max}$ 其实就是余弦函数的<strong>半周期值</strong>。该调整方法对学习率的改变可以做个图看看，代码为：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> torch <span class="keyword">import</span> optim</span><br><span class="line"><span class="keyword">from</span> torch.optim <span class="keyword">import</span> lr_scheduler</span><br><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line"></span><br><span class="line">lr_list = []</span><br><span class="line">model = squeezenet  <span class="comment"># 这里随便设置一个网络就行</span></span><br><span class="line"></span><br><span class="line">LR = <span class="number">0.01</span></span><br><span class="line">optimizer = optim.Adam(model.parameters(),lr = LR)</span><br><span class="line">scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max = <span class="number">10</span>)</span><br><span class="line"></span><br><span class="line">epochs = <span class="number">100</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> epoch <span class="keyword">in</span> <span class="built_in">range</span>(epochs):</span><br><span class="line">    scheduler.step()</span><br><span class="line">    lr_list.append(optimizer.state_dict()[<span class="string">&#x27;param_groups&#x27;</span>][<span class="number">0</span>][<span class="string">&#x27;lr&#x27;</span>])</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># plt.xticks(range(1, epochs+1))  # 用于调整刻度值</span></span><br><span class="line">plt.plot(<span class="built_in">range</span>(<span class="number">1</span>, epochs+<span class="number">1</span>), lr_list, color=<span class="string">&#x27;r&#x27;</span>)</span><br><span class="line"></span><br><span class="line">plt.savefig(<span class="string">&quot;cosine_annealing_lr.png&quot;</span>, dpi=<span class="number">100</span>)</span><br></pre></td></tr></table></figure>
 <p>下面是学习率变化曲线，可以看出半周期是 10。</p>
 <p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/cosine_annealing_lr_100.png" alt></p>
@@ -400,12 +396,12 @@
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, </span><br><span class="line">                                                     T_0, </span><br><span class="line">                                                     T_mult=<span class="number">1</span>, </span><br><span class="line">                                                     eta_min=<span class="number">0</span>, </span><br><span class="line">                                                     last_epoch=- <span class="number">1</span>, </span><br><span class="line">                                                     verbose=<span class="literal">False</span>)</span><br></pre></td></tr></table></figure>
 <p>官方文档的说明如下：</p>
 <p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/pytorch_cosine_annealing_wr.png" alt></p>
-<p>这里的 $\eta<em>{max}$ 和 $\eta</em>{min}$ 的含义和 <code>CosineAnnealingLR</code> 里的含义是一样的。</p>
-<p>$T<em>0$ 的含义是学习率<strong>第一次</strong>回到初始值的 epoch 位置。如果只说到这里，其实这个 $T_0$ 和 <code>CosineAnnealingLR</code> 里的 $T</em>{max}$ 的含义是一样的，都是余弦函数的半周期。但之所以这里用的下标是 0 而不是 $max$，并且也强调了是「第一次」回到初始值的 epoch 位置，是因为还要考虑 <code>T_mult</code> 这个参数。</p>
+<p>这里的 $\eta_{max}$ 和 $\eta_{min}$ 的含义和 <code>CosineAnnealingLR</code> 里的含义是一样的。</p>
+<p>$T_0$ 的含义是学习率<strong>第一次</strong>回到初始值的 epoch 位置。如果只说到这里，其实这个 $T_0$ 和 <code>CosineAnnealingLR</code> 里的 $T_{max}$ 的含义是一样的，都是余弦函数的半周期。但之所以这里用的下标是 0 而不是 $max$，并且也强调了是「第一次」回到初始值的 epoch 位置，是因为还要考虑 <code>T_mult</code> 这个参数。</p>
 <p><code>T_mult</code> 参数控制了学习率变化的速度：</p>
 <ul>
 <li>如果 <code>T_mult=1</code>，那么 $T_0$ 就是余弦函数的半周期（在热重启里，其实只有半个周期，不存在整个周期），即学习率会在 $T_0$, $2T_0$, $3T_0$, $\dots$ 处回到最大值（初始学习率）</li>
-<li>如果 <code>T_mult&gt;1</code>，则学习率会在 $T<em>0$, $(1 + T</em>{mult})T<em>0$, $(1 + T</em>{mult} + T<em>{mult}^2)T_0$, $\dots$, $(1 + T</em>{mult} + T<em>{mult}^2 + \cdots + T</em>{mult}^i)T_0$ 处回到最大值</li>
+<li>如果 <code>T_mult&gt;1</code>，则学习率会在 $T_0$, $(1 + T_{mult})T_0$, $(1 + T_{mult} + T_{mult}^2)T_0$, $\dots$, $(1 + T_{mult} + T_{mult}^2 + \cdots + T_{mult}^i)T_0$ 处回到最大值</li>
 <li>如果 <code>T_mult&lt;1</code>，会报错</li>
 </ul>
 <p>对比一下二者的学习率变化曲线，代码为：</p>

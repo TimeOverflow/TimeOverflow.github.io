@@ -84,11 +84,7 @@
   </style>
 </noscript>
 
-<!-- hexo injector head_end start -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
-<!-- hexo injector head_end end --></head>
+</head>
 
 <body itemscope itemtype="http://schema.org/WebPage">
   <div class="container use-motion">
@@ -299,7 +295,7 @@ D_{W}\left(\vec{X}_{1}, \vec{X}_{2}\right)=\left\|G_{W}\left(\overrightarrow{X_{
 <p>对比损失的含义为：</p>
 <ul>
 <li>当两个样本相似时，$L = \frac{1}{2}(D_W)^2$，表示两个样本越相似，即欧式距离越小，则损失越小，反之亦然</li>
-<li>当两个样本不相似时，$L = \frac{1}{2}{\max \left(0, m-D_{W}\right)}^{2}$，我们希望网络能辨别出二者是不相似的，即 $D_W$ 越大越好，所以 $D_W$ 前用了负号，$D_W$ 越大，损失越小。当 $D_W$ 比 $m$ 还大时，$m-D_W &lt; 0$，此时损失为 0，也就是说，如果两个向量的距离过大时，这两个样本不参与损失计算。按原文语句：The margin defines a radius around $G_W(\vec{X})$</li>
+<li>当两个样本不相似时，$L = \frac{1}{2}\{\max \left(0, m-D_{W}\right)\}^{2}$，我们希望网络能辨别出二者是不相似的，即 $D_W$ 越大越好，所以 $D_W$ 前用了负号，$D_W$ 越大，损失越小。当 $D_W$ 比 $m$ 还大时，$m-D_W &lt; 0$，此时损失为 0，也就是说，如果两个向量的距离过大时，这两个样本不参与损失计算。按原文语句：The margin defines a radius around $G_W(\vec{X})$</li>
 </ul>
 <h3 id="Noise-contrastive-estimation-NCE"><span class="post-title-index">1.5. </span><a href="#Noise-contrastive-estimation-NCE" class="headerlink" title="Noise-contrastive estimation (NCE)"></a>Noise-contrastive estimation (NCE)</h3><p>将多分类问题转化为二分类问题（data and noise），和当前样本属于一类的样本为 data，其他不同类的样本为 noise，只要求能将 data sample 从 noise sample 中区分开就行了。</p>
 <h2 id="总体思路"><span class="post-title-index">2. </span><a href="#总体思路" class="headerlink" title="总体思路"></a>总体思路</h2><p>作者将对比学习（contrastive learning）看作一个动态字典（dynamic dictionary）查询问题。字典里的是 key，来自于对整个数据集的采样，key 是数据经过 encoder 得到的特征表示，对比学习的过程是对于一个 query，也用一个 encoder 编码为一个特征，现在这个 query 去字典里做查询（look up)，它应该与它的 matching key 相似，与其他的 key 不相似。用于 key 和 query 编码的 encoder 可以相同，也可以不同。</p>
