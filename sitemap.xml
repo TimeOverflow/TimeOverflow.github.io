@@ -2,6 +2,15 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://timeoverflow.github.io/2021/02/12/VPS-GFW-guide/</loc>
+    
+    <lastmod>2022-03-15</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
     <loc>https://timeoverflow.github.io/2022/03/15/paper-byol/</loc>
     
     <lastmod>2022-03-15</lastmod>
@@ -32,15 +41,6 @@
     <loc>https://timeoverflow.github.io/2021/05/19/linux-notes/</loc>
     
     <lastmod>2022-03-08</lastmod>
-    
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://timeoverflow.github.io/2021/02/12/VPS-GFW-guide/</loc>
-    
-    <lastmod>2022-03-01</lastmod>
     
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -214,14 +214,14 @@
   </url>
   
   <url>
-    <loc>https://timeoverflow.github.io/tags/Batch-Normalization/</loc>
+    <loc>https://timeoverflow.github.io/tags/%E4%BA%8C%E5%8F%89%E6%A0%91/</loc>
     <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
-    <loc>https://timeoverflow.github.io/tags/%E4%BA%8C%E5%8F%89%E6%A0%91/</loc>
+    <loc>https://timeoverflow.github.io/tags/Batch-Normalization/</loc>
     <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -284,6 +284,13 @@
   </url>
   
   <url>
+    <loc>https://timeoverflow.github.io/tags/%E8%87%AA%E7%9B%91%E7%9D%A3%E5%AD%A6%E4%B9%A0/</loc>
+    <lastmod>2022-03-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
     <loc>https://timeoverflow.github.io/tags/%E4%BC%98%E5%8C%96%E5%99%A8/</loc>
     <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
@@ -292,13 +299,6 @@
   
   <url>
     <loc>https://timeoverflow.github.io/tags/PyTorch/</loc>
-    <lastmod>2022-03-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://timeoverflow.github.io/tags/%E8%87%AA%E7%9B%91%E7%9D%A3%E5%AD%A6%E4%B9%A0/</loc>
     <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -328,14 +328,14 @@
   </url>
   
   <url>
-    <loc>https://timeoverflow.github.io/categories/ML-and-DL/</loc>
+    <loc>https://timeoverflow.github.io/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/</loc>
     <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
-    <loc>https://timeoverflow.github.io/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/</loc>
+    <loc>https://timeoverflow.github.io/categories/ML-and-DL/</loc>
     <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -363,14 +363,14 @@
   </url>
   
   <url>
-    <loc>https://timeoverflow.github.io/categories/PyTorch/</loc>
+    <loc>https://timeoverflow.github.io/categories/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/</loc>
     <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
-    <loc>https://timeoverflow.github.io/categories/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/</loc>
+    <loc>https://timeoverflow.github.io/categories/PyTorch/</loc>
     <lastmod>2022-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
