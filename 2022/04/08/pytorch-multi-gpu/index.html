@@ -22,16 +22,16 @@
     var CONFIG = {"hostname":"timeoverflow.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="这里只记录使用 torch.nn.parallel.DistributedDataParallel 进行多卡训练，使用 torch.nn.&#96;&#96;DataParallel 的方法已经不被 PyTorch 官方推荐了，因此不做赘述。">
+  <meta name="description" content="这里只记录使用 torch.nn.parallel.DistributedDataParallel 进行多卡训练，使用 torch.nn.DataParallel 的方法已经不被 PyTorch 官方推荐了，因此不做赘述。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="使用 DDP 多卡训练">
 <meta property="og:url" content="https://timeoverflow.github.io/2022/04/08/pytorch-multi-gpu/index.html">
 <meta property="og:site_name" content="时间溢出的地方">
-<meta property="og:description" content="这里只记录使用 torch.nn.parallel.DistributedDataParallel 进行多卡训练，使用 torch.nn.&#96;&#96;DataParallel 的方法已经不被 PyTorch 官方推荐了，因此不做赘述。">
+<meta property="og:description" content="这里只记录使用 torch.nn.parallel.DistributedDataParallel 进行多卡训练，使用 torch.nn.DataParallel 的方法已经不被 PyTorch 官方推荐了，因此不做赘述。">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/202204081318682.png">
 <meta property="article:published_time" content="2022-04-08T05:03:32.000Z">
-<meta property="article:modified_time" content="2022-04-08T05:28:17.315Z">
+<meta property="article:modified_time" content="2022-04-08T05:30:31.777Z">
 <meta property="article:author" content="TimeOverflow">
 <meta property="article:tag" content="Pytorch 多卡训练">
 <meta name="twitter:card" content="summary">
@@ -192,7 +192,7 @@
               <span class="post-meta-item-text">发表于</span>
               
 
-              <time title="创建时间：2022-04-08 13:03:32 / 修改时间：13:28:17" itemprop="dateCreated datePublished" datetime="2022-04-08T13:03:32+08:00">2022-04-08</time>
+              <time title="创建时间：2022-04-08 13:03:32 / 修改时间：13:30:31" itemprop="dateCreated datePublished" datetime="2022-04-08T13:03:32+08:00">2022-04-08</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -250,7 +250,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>这里只记录使用 <code>torch.nn.parallel.DistributedDataParallel</code> 进行多卡训练，使用 <code>torch.nn.``DataParallel</code> 的方法已经不被 PyTorch 官方推荐了，因此不做赘述。</p>
+        <p>这里只记录使用 <code>torch.nn.parallel.DistributedDataParallel</code> 进行多卡训练，使用 <code>torch.nn.DataParallel</code> 的方法已经不被 PyTorch 官方推荐了，因此不做赘述。</p>
 <span id="more"></span>
 <h2 id="原理"><span class="post-title-index">1. </span><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>DDP加速的原理是通过启动多个<strong>进程</strong>，提高同时训练的 <strong>batch size</strong> 来增加并行度的，每一个进程都会加载一个模型，用<strong>不同的数据</strong>进行训练之后得到各自的梯度，然后通过 <strong>Ring-Reduce</strong> 算法获得所有进程的梯度，然后进行相同的梯度下降。注意在训练前和训练后，所有进程的模型参数都是同步了的。</p>
 <p>Ring-Reduce 是很简单理解的一个算法：每个进程都从左手边获得一份梯度，然后从右手发送一份梯度（一份指的是一个 GPU 得出的梯度），经过 n 次迭代之后，所有进程都获得了相同的完整的梯度。如下图，假设梯度 $\nabla w$ 是 GPU0 算出来的，第一次 $\nabla w$ 被发送到 GPU1，第二次被 GPU1 发送到 GPU2，第三次被 GPU2 发送到 GPU3，第四次被发送到 GPU4，第五次被发回给 GPU0。这样每个进程都只需要接收一个，发送一个，而且能够清楚知道什么时候结束。</p>
