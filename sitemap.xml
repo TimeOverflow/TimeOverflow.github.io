@@ -2,6 +2,15 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://timeoverflow.github.io/2022/04/09/normalization/</loc>
+    
+    <lastmod>2022-04-09</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
     <loc>https://timeoverflow.github.io/2022/04/08/pytorch-multi-gpu/</loc>
     
     <lastmod>2022-04-08</lastmod>
@@ -329,6 +338,13 @@
   
   <url>
     <loc>https://timeoverflow.github.io/tags/Pytorch-%E5%A4%9A%E5%8D%A1%E8%AE%AD%E7%BB%83/</loc>
+    <lastmod>2022-04-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://timeoverflow.github.io/tags/Normalization/</loc>
     <lastmod>2022-04-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>

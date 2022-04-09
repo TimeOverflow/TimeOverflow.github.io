@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.1">
+<meta name="google-site-verification" content="nRdQ64asSdtMIPKmtAL6qJO9Ka3rBCML55licirmHbo" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/panda-apple.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/panda-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/panda-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"timeoverflow.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="我对深度学习中用到的几种 Normalization 的原理一直了解得不是很清晰，只有个模糊的概念。网上有很多文章介绍相关内容，但我觉得写的都不好，都是模模糊糊的套话，并没有真正深入解释，我们都知道要求均值求标准差，但具体是在哪些维度求呢，并没有讲清楚。很多人喜欢用何恺明在 Group Normalization 中作的一张图（如下），但这个图其实不好看懂，尤其对于本来就不甚清楚的人（就是我）来说">
+<meta property="og:type" content="article">
+<meta property="og:title" content="真正理解 ormalization">
+<meta property="og:url" content="https://timeoverflow.github.io/2022/04/09/normalization/index.html">
+<meta property="og:site_name" content="时间溢出的地方">
+<meta property="og:description" content="我对深度学习中用到的几种 Normalization 的原理一直了解得不是很清晰，只有个模糊的概念。网上有很多文章介绍相关内容，但我觉得写的都不好，都是模模糊糊的套话，并没有真正深入解释，我们都知道要求均值求标准差，但具体是在哪些维度求呢，并没有讲清楚。很多人喜欢用何恺明在 Group Normalization 中作的一张图（如下），但这个图其实不好看懂，尤其对于本来就不甚清楚的人（就是我）来说">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/202204091213910.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/202204082140464.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/202204090027032.jpg">
+<meta property="og:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/202204091100502.png">
+<meta property="article:published_time" content="2022-04-09T04:07:15.000Z">
+<meta property="article:modified_time" content="2022-04-09T04:19:59.637Z">
+<meta property="article:author" content="TimeOverflow">
+<meta property="article:tag" content="Normalization">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/202204091213910.png">
+
+<link rel="canonical" href="https://timeoverflow.github.io/2022/04/09/normalization/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>真正理解 ormalization | 时间溢出的地方</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">时间溢出的地方</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/TimeOverflow" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://timeoverflow.github.io/2022/04/09/normalization/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/uploads/avatar.jpg">
+      <meta itemprop="name" content="TimeOverflow">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="时间溢出的地方">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          真正理解 ormalization
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2022-04-09 12:07:15 / 修改时间：12:19:59" itemprop="dateCreated datePublished" datetime="2022-04-09T12:07:15+08:00">2022-04-09</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/ML-and-DL/" itemprop="url" rel="index"><span itemprop="name">ML and DL</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2022/04/09/normalization/" class="post-meta-item leancloud_visitors" data-flag-title="真正理解 ormalization" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2022/04/09/normalization/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2022/04/09/normalization/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>6 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>我对深度学习中用到的几种 Normalization 的原理一直了解得不是很清晰，只有个模糊的概念。网上有很多文章介绍相关内容，但我觉得写的都不好，都是模模糊糊的套话，并没有真正深入解释，我们都知道要求均值求标准差，但具体是在哪些维度求呢，并没有讲清楚。很多人喜欢用何恺明在 <a target="_blank" rel="noopener" href="https://arxiv.org/abs/1803.08494">Group Normalization</a> 中作的一张图（如下），但这个图其实不好看懂，尤其对于本来就不甚清楚的人（就是我）来说。为了清楚这些 Normalization 的原理，我看了一下它们的实现代码，并根据代码自己画了一些示意图，还自己写了简单的实现代码与 PyTorch 中的 API 对比来验证我的理解的正确性。</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/202204091213910.png" alt></p>
+<p>本文只介绍了三种 Normalization: Batch Normalization, Layer Normalization, Group Normalization，还有一个 Instance Normalization 没有介绍，因为这个主要用在图像迁移里，对于大部分场合来说并不常用，所以我暂时也没打算去深入了解。</p>
+<span id="more"></span>
+<h2 id="Batch-Normalization"><span class="post-title-index">1. </span><a href="#Batch-Normalization" class="headerlink" title="Batch Normalization"></a>Batch Normalization</h2><p>Batch Normalization 是沿通道维度计算均值和标准差，沿通道维度是说，把当前 batch 里每个样本这个通道上的所有值放在一块计算均值和标准差。注意对于 4-D 或者 3-D 的 Tensor 来说，对于一个样本，每个通道上的数目并不仅仅是 1，比如 4-D 的 Tensor，一个通道上有 $H \times W$ 个 element，并不是一个 batch 里样本的同一通道上的每个位置都计算这个位置的均值和标准差，而是把这个通道上的所有 element 放在一起看。</p>
+<p>下面是一个 4-D Tensor with shape $(B, C, H, W)$ 计算均值和标准差的示意图，计算得到的均值和方差的形状是 $(C,)$，再广播成输入的形状进行计算。</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/202204082140464.png" alt style="zoom:80%;"></p>
+<p>为了保证非线性，还要再 scale and shift，用两个参数 $\gamma$ 和 $\beta$，二者的形状是 $(C,)$</p>
+<p>计算方差（或标准差）是<strong>有偏的</strong>，即除以 $B$ 而不是 $B-1$</p>
+<p>对于不同形状的输入，计算规则如下：</p>
+<ol>
+<li><p>一个 batch 的图片输入 $X \in \mathbb{R}^{B \times C \times H \times W}$, $\gamma \in \mathbb{R}^C$, $\beta \in \mathbb{R}^C$:</p>
+<script type="math/tex; mode=display">
+ \mathrm{BN}(X)=\gamma \frac{X-\underset{B, H, W}{\mathbb{E}}[X]}{\sqrt{\underset{B, H, W}{\operatorname{Var}}[X]+\epsilon}}+\beta</script></li>
+<li><p>一个 batch 的 sequence embeddings 输入 $X \in \mathbb{R}^{B \times C \times L}$, $\gamma \in \mathbb{R}^C$, $\beta \in \mathbb{R}^C$:</p>
+<script type="math/tex; mode=display">
+ \mathrm{BN}(X)=\gamma \frac{X-\underset{B, L}{\mathbb{E}}[X]}{\sqrt{\underset{B, L}{\operatorname{Var}}[X]+\epsilon}}+\beta</script></li>
+<li><p>一个 batch 的 embeddings 输入 $X \in \mathbb{R}^{B \times C}$, $\gamma \in \mathbb{R}^C$, $\beta \in \mathbb{R}^C$:</p>
+<script type="math/tex; mode=display">
+ \mathrm{BN}(X)=\gamma \frac{X-\underset{B}{\mathbb{E}}[X]}{\sqrt{\underset{B}{\operatorname{Var}}[X]+\epsilon}}+\beta</script></li>
+</ol>
+<p>因为 BN 在 2D 图像处理中比较常用，所以看一下 PyTorch 中的 <code>torch.nn.BatchNorm2d</code>:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">torch.nn.BatchNorm2d(num_features, </span><br><span class="line">                     eps=<span class="number">1e-05</span>, </span><br><span class="line">                     momentum=<span class="number">0.1</span>, </span><br><span class="line">                     affine=<span class="literal">True</span>, </span><br><span class="line">                     track_running_stats=<span class="literal">True</span>, </span><br><span class="line">                     device=<span class="literal">None</span>, dtype=<span class="literal">None</span>)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p><code>num_features</code>: 通道数</p>
+</li>
+<li><p><code>eps</code>: 防止零除</p>
+</li>
+<li><p><code>affine</code>: 是否 scale and shift，这两个参数 $\gamma$ 和 $\beta$ 是可学习的参数，在代码中应该用 <code>nn.Parameter</code> 包裹这两个 Tensor</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># init</span></span><br><span class="line"><span class="keyword">if</span> self.affine:</span><br><span class="line">	self.scale = nn.Parameter(torch.ones(channels))</span><br><span class="line">	self.shift = nn.Parameter(torch.zeros(channels))</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><code>momentum</code>: 计算 <code>running_mean</code> 和 <code>running_var</code>，用于推理的时候使用，<code>running_mean</code> 和 <code>running_var</code> 不应该参与梯度计算，所以应该加入 <code>buffer</code> 中</p>
+<p>  <code>track_running_stats</code>: 是否计算 <code>running_mean</code> 和 <code>running_var</code>，默认是计算的。如果设置为 <code>False</code>，则在推理的时候也当场计算参与推理的 batch 的 mean 和 var</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># init</span></span><br><span class="line"><span class="keyword">if</span> self.track_running_stats:</span><br><span class="line">    self.register_buffer(<span class="string">&#x27;running_mean&#x27;</span>, torch.zeros(channels))</span><br><span class="line">    self.register_buffer(<span class="string">&#x27;running_var&#x27;</span>, torch.ones(channels))</span><br><span class="line"></span><br><span class="line"><span class="comment"># update</span></span><br><span class="line"><span class="keyword">if</span> self.track_running_stats:</span><br><span class="line">	self.running_mean = (<span class="number">1</span> - self.momentum) * self.running_mean + self.momentum * mean</span><br><span class="line">	self.running_var = (<span class="number">1</span> - self.momentum) * self.running_var + self.momentum * var</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>自己实现简单的代码验证一下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"></span><br><span class="line">x = torch.randn(<span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">5</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 这里用于验证的时候要把 affine 设为 False，因为 PyTorch 中</span></span><br><span class="line"><span class="comment"># 是用 torch.empty() 初始化 scale 和 shift 的</span></span><br><span class="line">y_bn = nn.BatchNorm2d(<span class="number">4</span>, affine=<span class="literal">False</span>)(x)</span><br><span class="line"></span><br><span class="line">x_mean = torch.mean(x, dim=(<span class="number">0</span>, <span class="number">2</span>, <span class="number">3</span>), keepdim=<span class="literal">True</span>)  <span class="comment"># shape=(1, 4, 1, 1)</span></span><br><span class="line">x_std = torch.std(x, dim=(<span class="number">0</span>, <span class="number">2</span>, <span class="number">3</span>), unbiased=<span class="literal">False</span>, keepdim=<span class="literal">True</span>)<span class="comment"># shape=(1, 4, 1, 1)</span></span><br><span class="line">eps=<span class="number">1e-5</span></span><br><span class="line">y_verify = (x - x_mean) / (x_std + eps)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(torch.<span class="built_in">sum</span>((y_bn - y_verify) &lt; <span class="number">1e-4</span>).item())</span><br><span class="line"></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">outputs:</span></span><br><span class="line"><span class="string">300</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+<p>代码实现可以参考 <a target="_blank" rel="noopener" href="https://nn.labml.ai/normalization/batch_norm/index.html">labml.ai-batch_norm</a></p>
+<h2 id="Layer-Normalization"><span class="post-title-index">2. </span><a href="#Layer-Normalization" class="headerlink" title="Layer Normalization"></a>Layer Normalization</h2><p>Layer Normalization 主要被用于 NLP 领域，它跟 batch size 无关，是在每个样本的 feature 上做 normalization，这里说的 feature 具体指代什么，可以根据不同的输入来决定（用 <code>normalizaed_shape</code> 来指定）。在 NLP 任务中，一般是将每个词的 embedding 做 normalization。这是比较符合直觉的，因为不能一个 batch 的不同 sample 之间做 normalization，同样在一个 sequence 里面做 normalization 也不行，因为一个 sequence 里会有 padding，把 padding 和其他词的 embedding 一起做 normalization 是不合理的，只能是每个词自己做 normalization。</p>
+<p>下面是一个 3-D Tensor with shape $(B, L, C)$ 计算均值和标准差的示意图，计算得到的均值和方差的形状是 $(B,L)$，再广播成输入的形状进行计算。即有 $B$ 个句子，每个句子长度为 $L$，每个词的 embedding size 为 $C$。</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/202204090027032.jpg" alt style="zoom:67%;"></p>
+<p>同样，Layer Normalization 中也会加上 scale and shift，但与 Batch Normalization 不同，这个是 element-wise 的，也就是 scale and shift 的形状与参与 normalization 的那部分 feature 维度相同。</p>
+<p>计算方差（或标准差）同样是<strong>有偏</strong>的</p>
+<p>对于不同形状的输入，计算规则如下：</p>
+<ol>
+<li><p>一个 batch 的 sequence embeddings 输入 $X \in \mathbb{R}^{B \times C \times L}$, $\gamma \in \mathbb{R}^C$, $\beta \in \mathbb{R}^C$:</p>
+<script type="math/tex; mode=display">
+ \mathrm{LN}(X)=\gamma \frac{X-\underset{C}{\mathbb{E}}[X]}{\sqrt{\underset{C}{\operatorname{Var}}[X]+\epsilon}}+\beta</script></li>
+<li><p>一个 batch 的 embeddings 输入 $X \in \mathbb{R}^{B \times C}$, $\gamma \in \mathbb{R}^C$, $\beta \in \mathbb{R}^C$:</p>
+<script type="math/tex; mode=display">
+ \mathrm{LN}(X)=\gamma \frac{X-\underset{C}{\mathbb{E}}[X]}{\sqrt{\underset{C}{\operatorname{Var}}[X]+\epsilon}}+\beta</script></li>
+<li><p>一个 batch 的图片输入 $X \in \mathbb{R}^{B \times C \times H \times W}$, $\gamma \in \mathbb{R}^{C \times H \times W}$, $\beta \in \mathbb{R}^{C \times H \times W}$:</p>
+<script type="math/tex; mode=display">
+ \mathrm{LN}(X)=\gamma \frac{X-\underset{C, H, W}{\mathbb{E}}[X]}{\sqrt{\underset{C, H, W}{\operatorname{Var}}[X]+\epsilon}}+\beta</script></li>
+</ol>
+<p>PyTorch 中的 Layer Normalization 不分什么 1-D, 2-D 的，统一用 <code>torch.nn.LayerNorm</code>:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">torch.nn.LayerNorm(normalized_shape, </span><br><span class="line">                   eps=<span class="number">1e-05</span>, </span><br><span class="line">                   elementwise_affine=<span class="literal">True</span>, </span><br><span class="line">                   device=<span class="literal">None</span>, dtype=<span class="literal">None</span>)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p><code>normalized_shape</code>: 参与 normalization 的那几个维度的形状，一般都是后面几个维度。<code>normalized_shape</code> 可以是 <em>int</em>, <em>list</em> 或 <em>torch.Tensor</em>，如果是 <em>int</em> 就转成 <em>list</em>。比如 NLP 中一个输入序列的 shape 是 <code>(B, L, C)</code>，则 <code>normalized_shape</code> 就是 <code>C</code> 或 <code>[C]</code>，这样参与 normalization 的 dim 就是 -1.</p>
+</li>
+<li><p><code>eps</code>: 防止零除</p>
+</li>
+<li><p><code>elementwise_affine</code>: 是否 scale and shift，这两个参数 $\gamma$ 和 $\beta$ 是可学习的参数，在代码中应该用 <code>nn.Parameter</code> 包裹这两个 Tensor</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> self.elementwise_affine:</span><br><span class="line">	self.gain = nn.Parameter(torch.ones(normalized_shape))</span><br><span class="line">	self.bias = nn.Parameter(torch.zeros(normalized_shape))</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>自己实现简单的代码验证一下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"></span><br><span class="line">batch_size = <span class="number">3</span></span><br><span class="line">seq_len = <span class="number">5</span></span><br><span class="line">embedding_dim = <span class="number">4</span></span><br><span class="line">x = torch.randn(batch_size, seq_len, embedding_dim)</span><br><span class="line"></span><br><span class="line">y_ln = nn.LayerNorm(normalized_shape=[embedding_dim], elementwise_affine=<span class="literal">False</span>)(x)</span><br><span class="line"></span><br><span class="line">x_mean = torch.mean(x, dim=-<span class="number">1</span>, keepdim=<span class="literal">True</span>)  <span class="comment"># shape=(3, 5, 1)</span></span><br><span class="line">x_std = torch.std(x, dim=-<span class="number">1</span>, unbiased=<span class="literal">False</span>, keepdim=<span class="literal">True</span>)  <span class="comment"># shape=(3, 5, 1)</span></span><br><span class="line">eps=<span class="number">1e-5</span></span><br><span class="line">y_verify = (x - x_mean) / (x_std + eps)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(torch.<span class="built_in">sum</span>((y_ln - y_verify) &lt; <span class="number">1e-4</span>).item())</span><br><span class="line"></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">outputs:</span></span><br><span class="line"><span class="string">60</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+<h2 id="Group-Normalization"><span class="post-title-index">3. </span><a href="#Group-Normalization" class="headerlink" title="Group Normalization"></a>Group Normalization</h2><p>Group Normalization 主要用于图像领域，对于一个 2-D 图像，它的 Tensor 是 4-D 的，即 <code>(B, C, H, W)</code>，Group Normalization 将 channels 分为几个 group，然后每个 group 内的所有元素做 normalization。这个操作只在单个样本上进行，不涉及 batch，所以可以用于一些 batch 比较小的场合。如果设置 group 为 1，那么 Group Normalization 就是 Layer Normalization。</p>
+<p>Group Normalization 中的 scale and shift 是给每个通道一个参数，二者的形状是 $(C,)$</p>
+<p>计算方差（或标准差）同样是<strong>有偏</strong>的</p>
+<p>下面是一个 4-D Tensor with shape $(B, C, H, W)$ 计算均值和标准差的示意图，分成 $G$ 个 group，reshape 成 $(B, G, C/G, H, W)$计算得到的均值和方差的形状是 $(B, G)$，再广播成 $(B, G, C/G, H, W)$ 的形状进行计算，最后再 reshape 成输入的形状。</p>
+<p><img src="https://raw.githubusercontent.com/TimeOverflow/picgo-images/master/202204091100502.png" alt style="zoom: 80%;"></p>
+<p>计算过程不好用公式表示，这里直接用代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># x shape=(B, C, H, W)</span></span><br><span class="line">x_shape = x.shape</span><br><span class="line">x = x.view(batch_size, groups, -<span class="number">1</span>)  <span class="comment"># shape=(B, G, C/G * H * W) </span></span><br><span class="line">x_mean = x.mean(dim=[-<span class="number">1</span>], keep_dim=<span class="literal">True</span>)  <span class="comment"># shape=(B, G, 1)</span></span><br><span class="line">x_std = x.std(dim=[-<span class="number">1</span>], keep_dim=<span class="literal">True</span>)  <span class="comment"># shape=(B, G, 1)</span></span><br><span class="line"></span><br><span class="line">x_norm = (x - x_mean) / (x_std + eps)  <span class="comment"># shape=(B, G, C/G * H * W) </span></span><br><span class="line"></span><br><span class="line">y = x_norm.view(x_shape)</span><br></pre></td></tr></table></figure>
+<p>PyTorch 中的 <code>torch.nn.GroupNorm</code> 如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">torch.nn.GroupNorm(num_groups, </span><br><span class="line">                   num_channels, </span><br><span class="line">                   eps=<span class="number">1e-05</span>, </span><br><span class="line">                   affine=<span class="literal">True</span>, </span><br><span class="line">                   device=<span class="literal">None</span>, dtype=<span class="literal">None</span>)</span><br></pre></td></tr></table></figure>
+<p>这些参数没什么好讲的，见词知义，唯一需要强调一下的是 <code>affine</code>，涉及到 scale and shift，这两个可学习参数的是逐通道的，初始化如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> self.affine:</span><br><span class="line">	self.scale = nn.Parameter(torch.ones(channels))</span><br><span class="line">	self.shift = nn.Parameter(torch.zeros(channels))</span><br></pre></td></tr></table></figure>
+<p>自己实现简单的代码验证一下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"></span><br><span class="line">x = torch.randn(<span class="number">3</span>, <span class="number">8</span>, <span class="number">5</span>, <span class="number">5</span>)</span><br><span class="line"></span><br><span class="line">y_gn = nn.GroupNorm(num_groups=<span class="number">4</span>, num_channels=<span class="number">8</span>, affine=<span class="literal">False</span>)(x)<span class="comment"># shape=(3, 8, 5, 5)</span></span><br><span class="line"></span><br><span class="line">x_shape = x.shape</span><br><span class="line">x = x.view(<span class="number">3</span>, <span class="number">4</span>, <span class="number">2</span>, <span class="number">5</span>, <span class="number">5</span>)</span><br><span class="line"></span><br><span class="line">x_mean = torch.mean(x, dim=(<span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>), keepdim=<span class="literal">True</span>)  <span class="comment"># shape=(3, 4, 1, 1, 1)</span></span><br><span class="line">x_std = torch.std(x, dim=(<span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>), unbiased=<span class="literal">False</span>, keepdim=<span class="literal">True</span>)  <span class="comment"># shape=(3, 4, 1, 1, 1)</span></span><br><span class="line">eps=<span class="number">1e-5</span></span><br><span class="line">y_verify = (x - x_mean) / (x_std + eps)  <span class="comment"># shape=(3, 4, 2, 5, 5)</span></span><br><span class="line">y_verify = y_verify.view(x_shape)  <span class="comment"># shape=(3, 8, 5, 5)</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(torch.<span class="built_in">sum</span>((y_gn - y_verify) &lt; <span class="number">1e-4</span>).item())</span><br><span class="line"></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">outputs:</span></span><br><span class="line"><span class="string">600</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+<h2 id="参考资料"><span class="post-title-index">4. </span><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ol>
+<li><a target="_blank" rel="noopener" href="https://nn.labml.ai/normalization/index.html">labml.ai 的代码实现</a></li>
+<li>PyTorch 文档<ul>
+<li><a target="_blank" rel="noopener" href="https://pytorch.org/docs/stable/generated/torch.nn.BatchNorm2d.html#batchnorm2d">BatchNorm2d</a></li>
+<li><a target="_blank" rel="noopener" href="https://pytorch.org/docs/stable/generated/torch.nn.LayerNorm.html?highlight=layernorm#torch.nn.LayerNorm">LayerNorm</a></li>
+<li><a target="_blank" rel="noopener" href="https://pytorch.org/docs/stable/generated/torch.nn.GroupNorm.html?highlight=groupnorm#torch.nn.GroupNorm">GroupNorm</a></li>
+</ul>
+</li>
+</ol>
+<p><strong>更新记录：</strong></p>
+<ul>
+<li>2022-4-9：第一版上传</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Normalization/" rel="tag"># Normalization</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/04/08/pytorch-multi-gpu/" rel="prev" title="使用 DDP 多卡训练">
+      <i class="fa fa-chevron-left"></i> 使用 DDP 多卡训练
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Batch-Normalization"><span class="nav-text">1. Batch Normalization</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Layer-Normalization"><span class="nav-text">2. Layer Normalization</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Group-Normalization"><span class="nav-text">3. Group Normalization</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-text">4. 参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="TimeOverflow"
+      src="/uploads/avatar.jpg">
+  <p class="site-author-name" itemprop="name">TimeOverflow</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">20</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/TimeOverflow" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;TimeOverflow" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:timeoverflow@yeah.net" title="E-Mail → mailto:timeoverflow@yeah.net" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2021 – 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">TimeOverflow</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">130k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">1:58</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'N3GrQmFE8RVjH8Sk6s4B7xnY-9Nh9j0Va',
+      appKey     : '4KwTSki3hoVvxnEwsxogPOKb',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : true,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
